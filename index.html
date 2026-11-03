@@ -43,7 +43,10 @@ canvas{width:100%;height:100%;display:block;position:relative;z-index:1}
 h1{font-size:26px;line-height:1.25;font-weight:900;color:#fff;margin-bottom:10px;letter-spacing:.5px}
 h1 .grad{background:linear-gradient(92deg,#a78bfa,#ec4899 55%,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
 p.subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:center;line-height:1.75;font-weight:600}
-.logo-orb{width:84px;height:84px;margin:2px auto 16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:#0b0620;background:radial-gradient(circle at 32% 28%,#fff,#a78bfa 45%,#6366f1);box-shadow:0 0 0 6px rgba(139,92,246,.15),0 0 42px rgba(139,92,246,.75);animation:floaty 3.2s ease-in-out infinite}
+.logo-orb{width:96px;height:96px;margin:14px auto 22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;color:#160b33;position:relative;isolation:isolate;background:radial-gradient(circle at 30% 22%,rgba(255,255,255,.98),rgba(255,255,255,0) 36%),radial-gradient(circle at 74% 84%,rgba(52,211,153,.55),rgba(52,211,153,0) 48%),radial-gradient(circle at 50% 50%,#f5d0fe 0%,#c4b5fd 30%,#a78bfa 52%,#6366f1 76%,#312e81 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6),inset 12px 14px 24px rgba(255,255,255,.45),inset -16px -20px 30px rgba(30,27,75,.55),0 0 0 7px rgba(139,92,246,.14),0 0 52px rgba(139,92,246,.85),0 20px 38px rgba(0,0,0,.5);text-shadow:0 1px 0 rgba(255,255,255,.6);animation:floaty 3.2s ease-in-out infinite}
+.logo-orb::before{content:'';position:absolute;left:50%;top:50%;width:146px;height:60px;transform:translate(-50%,-50%) rotate(-22deg);border:1.6px solid rgba(221,214,254,.85);border-radius:50%;background:radial-gradient(circle at 10% 50%,#fff 0 4px,rgba(255,255,255,0) 5.5px),radial-gradient(circle at 90% 50%,#fde68a 0 3.5px,rgba(253,230,138,0) 5px);box-shadow:0 0 18px rgba(139,92,246,.4);z-index:-1}
+.logo-orb::after{content:'';position:absolute;left:50%;top:50%;width:158px;height:70px;transform:translate(-50%,-50%) rotate(26deg);border:1.3px solid rgba(52,211,153,.55);border-radius:50%;background:radial-gradient(circle at 88% 50%,#6ee7b7 0 3px,rgba(110,231,183,0) 4.5px),radial-gradient(circle at 12% 50%,#f0abfc 0 2.6px,rgba(240,171,252,0) 4px);z-index:-1}
+.logo-orb-num{position:absolute;top:13px;left:16px;font-size:11px;font-weight:900;letter-spacing:.5px;color:rgba(22,11,51,.68);text-shadow:none}
 @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 .chips{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
 .chip{font-size:11px;font-weight:800;color:#ddd6fe;background:rgba(139,92,246,.13);border:1px solid rgba(167,139,250,.35);padding:6px 10px;border-radius:999px}
@@ -65,6 +68,11 @@ p.subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:cente
 .result-record.normal{color:#ddd6fe;background:rgba(139,92,246,.16);border:1px solid rgba(167,139,250,.45);box-shadow:none;backdrop-filter:blur(8px)}
 .result-main-title{font-size:36px;font-weight:900;color:#fff;margin-bottom:6px;letter-spacing:.5px;text-shadow:0 6px 30px rgba(139,92,246,.55)}
 .result-sub{font-size:16px;color:#c3cbe4;font-weight:800;margin-bottom:16px;line-height:1.5}
+.result-orb{width:104px;height:104px;margin:4px auto 22px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;isolation:isolate;background:radial-gradient(circle at 30% 22%,rgba(255,255,255,.98),rgba(255,255,255,0) 36%),radial-gradient(circle at 74% 84%,rgba(255,255,255,.28),rgba(255,255,255,0) 48%),radial-gradient(circle at 50% 50%,#ffffff 0%,var(--el) 34%,var(--el) 68%,rgba(3,3,12,.55) 135%);background-color:var(--el);box-shadow:inset 0 0 0 1px rgba(255,255,255,.65),inset 13px 15px 26px rgba(255,255,255,.5),inset -17px -22px 32px rgba(2,2,14,.5),0 0 0 7px rgba(255,255,255,.07),0 0 54px var(--el),0 22px 40px rgba(0,0,0,.5);animation:floaty 3.4s ease-in-out infinite}
+.result-orb::before{content:'';position:absolute;left:50%;top:50%;width:158px;height:64px;transform:translate(-50%,-50%) rotate(-22deg);border:1.6px solid rgba(255,255,255,.75);border-radius:50%;background:radial-gradient(circle at 10% 50%,#fff 0 4px,rgba(255,255,255,0) 5.5px),radial-gradient(circle at 90% 50%,#fde68a 0 3.5px,rgba(253,230,138,0) 5px);box-shadow:0 0 18px var(--el);z-index:-1}
+.result-orb::after{content:'';position:absolute;left:50%;top:50%;width:170px;height:74px;transform:translate(-50%,-50%) rotate(26deg);border:1.3px dashed rgba(253,230,138,.65);border-radius:50%;background:radial-gradient(circle at 88% 50%,#fff 0 3px,rgba(255,255,255,0) 4.5px);z-index:-1}
+.result-orb-num{position:absolute;top:14px;left:17px;font-size:12px;font-weight:900;letter-spacing:.5px;color:rgba(11,6,32,.66)}
+.result-orb-symbol{font-size:40px;font-weight:900;color:#0b0620;text-shadow:0 1px 0 rgba(255,255,255,.65),0 0 18px rgba(255,255,255,.35);line-height:1}
 .result-preview-card{width:100%;background:linear-gradient(160deg,rgba(30,27,75,.9),rgba(9,11,28,.96));border:1px solid rgba(167,139,250,.5);border-radius:26px;padding:12px;box-shadow:0 26px 60px rgba(0,0,0,.5),0 0 44px rgba(139,92,246,.24),inset 0 1px 0 rgba(255,255,255,.1);margin-bottom:12px;position:relative;overflow:hidden}
 .result-preview-card::after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.07) 48%,transparent 62%);pointer-events:none}
 .result-preview-img{width:100%;border-radius:18px;border:1px solid rgba(167,139,250,.35);display:block;user-select:auto!important;-webkit-user-select:auto!important;touch-action:auto!important}
@@ -142,11 +150,10 @@ p.subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:cente
 
 <div class="overlay" id="overlay">
   <div class="panel">
-    <div class="logo-orb">Og</div>
+    <div class="logo-orb"><span class="logo-orb-num">118</span>Og</div>
     <div class="kicker">Quantum Alchemy</div>
     <h1>元素融合<br><span class="grad">アルケミー・フュージョン</span></h1>
     <p class="subtitle">下部をスワイプして自機を動かし、同種の元素を融合。危険な雷物質を避け、118番元素オガネソンを目指そう。</p>
-    <div class="chips"><span class="chip">⚛ 全118元素</span><span class="chip">✦ スキル覚醒</span><span class="chip">🔥 超高難易度</span></div>
     <button class="btn" id="start-btn">ゲームスタート</button>
     <div class="howto">同じ元素を何度か融合すると進化（終盤は最大4回必要）<br>上位元素に触れると安定度が低下し、No.60からは安定度が時間でも減っていく<br>格下の元素はスコアに、雷はゲームオーバー</div>
   </div>
@@ -287,10 +294,19 @@ s.fillStyle='rgba(8,10,28,.55)';roundRect(s,44,44,512,512,22);s.fill();
 // header
 s.textAlign='center';s.fillStyle='#34d399';s.font='900 16px sans-serif';s.fillText('Q U A N T U M A L C H E M Y',300,82);
 s.fillStyle='#ffffff';s.font='900 34px sans-serif';s.fillText(isNewRecord?'新記録達成！':'実験レポート',300,120);
-// element orb with rings
-s.beginPath();s.arc(300,205,66,0,Math.PI*2);s.strokeStyle='rgba(167,139,250,.45)';s.lineWidth=1.5;s.stroke();
-s.beginPath();s.arc(300,205,56,0,Math.PI*2);s.fillStyle=el.color;s.shadowColor=el.color;s.shadowBlur=34;s.fill();s.shadowBlur=0;
-s.fillStyle='#0b0620';s.font='900 40px sans-serif';s.textBaseline='middle';s.fillText(el.symbol,300,206);s.textBaseline='alphabetic';
+// element orb with rings (jewel + electron orbits)
+const[er,eg,eb]=rgbOf(el.color);
+const oGlow=s.createRadialGradient(300,205,12,300,205,118);oGlow.addColorStop(0,`rgba(${er},${eg},${eb},.5)`);oGlow.addColorStop(1,`rgba(${er},${eg},${eb},0)`);s.fillStyle=oGlow;s.beginPath();s.arc(300,205,118,0,Math.PI*2);s.fill();
+s.save();s.translate(300,205);s.rotate(-.5);s.beginPath();s.ellipse(0,0,92,36,0,0,Math.PI*2);s.strokeStyle='rgba(255,255,255,.55)';s.lineWidth=1.6;s.stroke();
+[[92,36,0,'#ffffff'],[92,36,2.4,'#fde68a']].forEach(([rx,ry,a,c])=>{s.beginPath();s.arc(Math.cos(a)*rx,Math.sin(a)*ry,4.6,0,Math.PI*2);s.fillStyle=c;s.shadowColor=c;s.shadowBlur=10;s.fill();s.shadowBlur=0});s.restore();
+s.save();s.translate(300,205);s.rotate(.55);s.beginPath();s.ellipse(0,0,100,42,0,0,Math.PI*2);s.strokeStyle=`rgba(${er},${eg},${eb},.8)`;s.lineWidth=1.3;s.stroke();
+s.beginPath();s.arc(Math.cos(3.6)*100,Math.sin(3.6)*42,3.8,0,Math.PI*2);s.fillStyle='#ffffff';s.shadowColor='#ffffff';s.shadowBlur=9;s.fill();s.shadowBlur=0;s.restore();
+s.beginPath();s.arc(300,205,80,0,Math.PI*2);s.strokeStyle=fg;s.lineWidth=2;s.setLineDash([9,8]);s.stroke();s.setLineDash([]);
+const oBody=s.createRadialGradient(300-56*.38,205-56*.42,8,300,205,62);oBody.addColorStop(0,mixRgb(el.color,.88,true));oBody.addColorStop(.32,mixRgb(el.color,.38,true));oBody.addColorStop(.68,el.color);oBody.addColorStop(1,mixRgb(el.color,.45,false));
+s.beginPath();s.arc(300,205,56,0,Math.PI*2);s.fillStyle=oBody;s.shadowColor=el.color;s.shadowBlur=36;s.fill();s.shadowBlur=0;
+s.lineWidth=1.6;s.strokeStyle='rgba(255,255,255,.7)';s.stroke();
+s.save();s.translate(300-56*.34,205-56*.44);s.rotate(-.6);s.beginPath();s.ellipse(0,0,17,8.5,0,0,Math.PI*2);s.fillStyle='rgba(255,255,255,.55)';s.fill();s.restore();
+s.fillStyle='#0b0620';s.font='900 42px sans-serif';s.textBaseline='middle';s.lineWidth=3;s.strokeStyle='rgba(255,255,255,.35)';s.strokeText(el.symbol,300,206);s.fillText(el.symbol,300,206);s.textBaseline='alphabetic';
 s.fillStyle='#fff';s.font='900 27px sans-serif';s.fillText(`No.${el.z} ${el.name}`,300,298);
 s.fillStyle='#c3cbe4';s.font='800 16px sans-serif';s.fillText(`到達進捗 ${el.z} / 118`,300,324);
 // progress
@@ -299,7 +315,6 @@ s.fillStyle='rgba(255,255,255,.12)';roundRect(s,150,330,300,7,4);s.fill();const 
 const box=(x,y,label,val,green)=>{s.fillStyle='rgba(15,20,46,.92)';roundRect(s,x,y,224,82,16);s.fill();s.strokeStyle='rgba(167,139,250,.4)';s.lineWidth=1.5;roundRect(s,x,y,224,82,16);s.stroke();s.textAlign='left';s.fillStyle='#aeb9d6';s.font='900 15px sans-serif';s.fillText(label,x+18,y+29);s.fillStyle=green?'#34d399':'#c4b5fd';s.font='900 32px sans-serif';s.fillText(val,x+18,y+66);s.textAlign='center'};
 box(64,362,'最終スコア',String(score),false);box(312,362,'最高スコア',String(highScore),true);
 box(64,458,'到達元素',`No.${el.z} / 118`,false);box(312,458,'生存時間',`${survivalTimeSec} 秒`,true);
-s.fillStyle='#aeb9d6';s.font='800 16px sans-serif';s.fillText('究極のオガネソンを目指せ！ #AlchemyFusion',300,572-22);
 return cv.toDataURL('image/png');
 }
 const RANK_KEY='alchemy_fusion_ranking_v1',NAME_KEY='alchemy_fusion_player_name';
@@ -320,12 +335,13 @@ const isNewRecord=score>highScore;
 if(isNewRecord){highScore=score;localStorage.setItem('alchemy_ult_highscore',highScore);highScoreEl.textContent=highScore}
 const el=ELEMENTS[player.tier],survivalTimeSec=Math.floor(gameTime);
 const dataUrl=generateResultImage(el,score,highScore,survivalTimeSec,isNewRecord);
-const tweetText=`\n実験結果: No.${el.z} ${el.symbol} (${el.name}) 到達！\nスコア: ${score} pt (最高記録: ${highScore} pt)\n究極の元素オガネソンを目指せ！`;
+const tweetText=`\n実験結果: No.${el.z} ${el.symbol} (${el.name}) 到達！\nスコア: ${score} pt (最高記録: ${highScore} pt)\n究極の元素オガネソンを目指せ！\n#アルケミー・フュージョン`;
 overlay.innerHTML=`
 <div class="result-wrapper">
 <div class="result-record ${isNewRecord?'':'normal'}">${isNewRecord?'★ New Record':'Experiment Report'}</div>
 <div class="result-main-title">${isCollapse?'原子が崩壊した…':isNewRecord?'新記録達成！':'実験終了'}</div>
 <div class="result-sub">到達元素 ― No.${el.z} ${el.symbol}（${el.name}）${isCollapse?'<br>安定度がゼロになり原子が崩壊しました':''}</div>
+<div class="result-orb" style="--el:${el.color}"><span class="result-orb-num">${el.z}</span><span class="result-orb-symbol">${el.symbol}</span></div>
 <div class="result-stats">
 <div class="stat"><div class="k">SCORE</div><div class="v violet">${score}</div></div>
 <div class="stat"><div class="k">BEST</div><div class="v green">${highScore}</div></div>
