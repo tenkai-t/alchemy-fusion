@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>元素融合：アルケミー・フュージョン</title>
+<style>
+:root{
+  --violet:#8b5cf6; --violet2:#6366f1; --mint:#34d399; --pink:#ec4899;
+  --ink:#030308; --panel:rgba(13,16,38,.72); --line:rgba(167,139,250,.35);
+  --text:#e6f7ff; --muted:#9aa7c7;
+}
+*{box-sizing:border-box;user-select:none;-webkit-user-select:none;margin:0;padding:0}
+body{background:#010104;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;overflow:hidden;touch-action:none;display:flex;justify-content:center;align-items:center;height:100vh}
+#game-container{position:relative;width:100vw;height:100vh;max-width:480px;max-height:854px;overflow:hidden;background:radial-gradient(1100px 700px at 50% -10%,#312e81 0%,transparent 60%),radial-gradient(800px 600px at 90% 110%,rgba(236,72,153,.20),transparent 55%),radial-gradient(circle at center,#17123d 0%,#030308 78%);box-shadow:0 0 60px rgba(139,92,246,.35)}
+#game-container::before{content:'';position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent,rgba(139,92,246,.07),transparent,rgba(52,211,153,.06),transparent);animation:aurora 24s linear infinite;pointer-events:none}
+@keyframes aurora{to{transform:rotate(360deg)}}
+#game-container::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at center,transparent 55%,rgba(0,0,0,.55));pointer-events:none;z-index:2}
+canvas{width:100%;height:100%;display:block;position:relative;z-index:1}
+/* ---------- HUD ---------- */
+.ui-layer{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;padding:16px;z-index:5}
+.header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.score-card{background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:18px;padding:10px 14px 9px;box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);min-width:118px}
+.score-label{font-size:9px;letter-spacing:3px;color:var(--muted);font-weight:800}
+#score{font-size:30px;line-height:1.05;font-weight:900;background:linear-gradient(90deg,#fff,#a78bfa 55%,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.high-score{font-size:11px;color:var(--mint);font-weight:800;margin-top:2px;letter-spacing:.4px}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:auto}
+.element-badge{background:var(--panel);backdrop-filter:blur(14px);border:1.5px solid var(--violet);padding:8px 13px;border-radius:999px;font-size:13px;font-weight:900;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.35),0 0 18px rgba(139,92,246,.35);white-space:nowrap;transition:border-color .3s}
+.pause-btn{background:rgba(13,16,38,.8);backdrop-filter:blur(12px);border:1px solid var(--line);color:#c4b5fd;padding:8px 14px;border-radius:999px;font-size:11px;font-weight:900;cursor:pointer;letter-spacing:1.5px}
+.pause-btn:active{transform:scale(.96)}
+.progress-wrap{margin-top:12px;background:rgba(13,16,38,.55);border:1px solid rgba(167,139,250,.22);backdrop-filter:blur(10px);border-radius:999px;padding:7px 10px;display:flex;align-items:center;gap:9px}
+.progress-label{font-size:9px;letter-spacing:1.6px;color:var(--muted);font-weight:900;white-space:nowrap}
+.progress-track{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
+#progress-bar{height:100%;width:1%;border-radius:99px;background:linear-gradient(90deg,var(--violet),var(--pink),var(--mint));box-shadow:0 0 12px rgba(236,72,153,.7);transition:width .35s cubic-bezier(.2,.9,.3,1)}
+.progress-next{font-size:10px;color:#ddd6fe;font-weight:800;white-space:nowrap}
+/* ---------- Overlays / panels ---------- */
+.overlay{position:absolute;inset:0;background:rgba(2,2,10,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;flex-direction:column;justify-content:center;align-items:center;pointer-events:auto;z-index:20;opacity:1;transition:opacity .25s ease;padding:22px;overflow-y:auto}
+.overlay.hidden{opacity:0;pointer-events:none}
+.panel{width:100%;max-width:360px;background:linear-gradient(160deg,rgba(30,27,75,.88),rgba(10,12,30,.92));border:1px solid rgba(167,139,250,.4);border-radius:28px;padding:28px 22px 22px;box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 50px rgba(139,92,246,.22),inset 0 1px 0 rgba(255,255,255,.1);text-align:center;position:relative;overflow:hidden;animation:fadeInScale .35s cubic-bezier(.16,1,.3,1) forwards}
+.panel::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,#a78bfa,#34d399,transparent)}
+@keyframes fadeInScale{0%{opacity:0;transform:scale(.94) translateY(12px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+.kicker{font-size:10px;font-weight:900;letter-spacing:4px;color:var(--mint);text-transform:uppercase;margin-bottom:10px}
+h1{font-size:26px;line-height:1.25;font-weight:900;color:#fff;margin-bottom:10px;letter-spacing:.5px}
+h1 .grad{background:linear-gradient(92deg,#a78bfa,#ec4899 55%,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
+p.subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:center;line-height:1.75;font-weight:600}
+.logo-orb{width:84px;height:84px;margin:2px auto 16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:#0b0620;background:radial-gradient(circle at 32% 28%,#fff,#a78bfa 45%,#6366f1);box-shadow:0 0 0 6px rgba(139,92,246,.15),0 0 42px rgba(139,92,246,.75);animation:floaty 3.2s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.chips{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.chip{font-size:11px;font-weight:800;color:#ddd6fe;background:rgba(139,92,246,.13);border:1px solid rgba(167,139,250,.35);padding:6px 10px;border-radius:999px}
+.btn{position:relative;background:linear-gradient(135deg,#8b5cf6,#6366f1 55%,#ec4899 130%);color:#fff;border:none;padding:15px 30px;font-size:16px;font-weight:900;border-radius:999px;box-shadow:0 12px 30px rgba(99,102,241,.45),inset 0 1px 0 rgba(255,255,255,.35);cursor:pointer;width:100%;max-width:320px;margin-top:10px;transition:transform .1s,filter .2s;letter-spacing:1px}
+.btn:active{transform:scale(.97)} .btn:hover{filter:brightness(1.08)}
+.btn-ghost{background:rgba(15,23,42,.75);border:1px solid var(--line);color:#c4b5fd;box-shadow:none}
+.btn-share{background:linear-gradient(135deg,#0ea5e9,#1da1f2 55%,#6366f1);box-shadow:0 12px 30px rgba(29,161,242,.4),inset 0 1px 0 rgba(255,255,255,.35)}
+.howto{margin-top:16px;font-size:11px;color:#7c87a6;line-height:1.7;font-weight:600}
+/* ---------- Skills ---------- */
+.skill-container{width:100%;max-width:340px;display:flex;flex-direction:column;gap:11px}
+.skill-card{position:relative;background:linear-gradient(150deg,rgba(20,28,52,.96),rgba(13,16,38,.96));border:1px solid rgba(52,211,153,.55);border-radius:20px;padding:16px 18px 16px 52px;text-align:left;cursor:pointer;box-shadow:0 12px 28px rgba(0,0,0,.35);transition:transform .12s,box-shadow .2s;overflow:hidden}
+.skill-card::before{content:'✦';position:absolute;left:17px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#052e22;background:linear-gradient(135deg,#6ee7b7,#34d399);font-size:13px;box-shadow:0 0 16px rgba(52,211,153,.65)}
+.skill-card:active{transform:scale(.97)} .skill-card:hover{box-shadow:0 12px 32px rgba(52,211,153,.22)}
+.skill-card h3{color:#a7f3d0;font-size:15px;margin-bottom:4px;font-weight:900}
+.skill-card p{color:#94a3b8;font-size:12.5px;line-height:1.5;font-weight:600}
+/* ---------- Result ---------- */
+.result-wrapper{width:100%;max-width:392px;display:flex;flex-direction:column;align-items:center;animation:fadeInScale .38s cubic-bezier(.16,1,.3,1) forwards}
+.result-record{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:900;letter-spacing:3px;color:#08131f;background:linear-gradient(90deg,#fbbf24,#f59e0b,#34d399);padding:9px 16px;border-radius:999px;box-shadow:0 8px 24px rgba(245,158,11,.35);margin-bottom:12px;text-transform:uppercase}
+.result-record.normal{color:#ddd6fe;background:rgba(139,92,246,.16);border:1px solid rgba(167,139,250,.45);box-shadow:none;backdrop-filter:blur(8px)}
+.result-main-title{font-size:36px;font-weight:900;color:#fff;margin-bottom:6px;letter-spacing:.5px;text-shadow:0 6px 30px rgba(139,92,246,.55)}
+.result-sub{font-size:16px;color:#c3cbe4;font-weight:800;margin-bottom:16px;line-height:1.5}
+.result-preview-card{width:100%;background:linear-gradient(160deg,rgba(30,27,75,.9),rgba(9,11,28,.96));border:1px solid rgba(167,139,250,.5);border-radius:26px;padding:12px;box-shadow:0 26px 60px rgba(0,0,0,.5),0 0 44px rgba(139,92,246,.24),inset 0 1px 0 rgba(255,255,255,.1);margin-bottom:12px;position:relative;overflow:hidden}
+.result-preview-card::after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.07) 48%,transparent 62%);pointer-events:none}
+.result-preview-img{width:100%;border-radius:18px;border:1px solid rgba(167,139,250,.35);display:block;user-select:auto!important;-webkit-user-select:auto!important;touch-action:auto!important}
+.save-instruction{font-size:13.5px;color:#c4b5fd;font-weight:800;margin-top:10px;letter-spacing:.3px;text-align:center;line-height:1.5}
+.result-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-bottom:14px}
+.stat{background:rgba(13,16,38,.78);border:1px solid rgba(167,139,250,.28);backdrop-filter:blur(12px);border-radius:18px;padding:13px 15px;text-align:left}
+.stat .k{font-size:12px;letter-spacing:2px;color:#aeb9d6;font-weight:900;margin-bottom:4px}
+.stat .v{font-size:27px;font-weight:900;color:#fff;line-height:1.1}
+.stat .v.green{color:var(--mint)} .stat .v.violet{color:#c4b5fd}
+.action-button-group{width:100%;display:flex;flex-direction:column;gap:4px;align-items:center}
+.action-button-group .btn{font-size:18px;padding:17px 30px}
+/* ---------- Name entry + ranking ---------- */
+.name-card{width:100%;background:linear-gradient(150deg,rgba(30,27,75,.9),rgba(10,12,30,.94));border:1px solid rgba(52,211,153,.45);border-radius:22px;padding:16px;margin-bottom:12px;text-align:left;box-shadow:0 16px 36px rgba(0,0,0,.4)}
+.name-card .nk{font-size:12px;letter-spacing:2px;color:var(--mint);font-weight:900;margin-bottom:6px}
+.name-card .nt{font-size:17px;font-weight:900;color:#fff;margin-bottom:10px;line-height:1.4}
+.name-row{display:flex;gap:8px}
+.name-input{flex:1;min-width:0;background:rgba(3,5,18,.85);border:1.5px solid rgba(167,139,250,.55);border-radius:999px;padding:13px 16px;font-size:17px;font-weight:800;color:#fff;outline:none;user-select:text!important;-webkit-user-select:text!important;touch-action:auto!important;font-family:inherit}
+.name-input:focus{border-color:var(--mint);box-shadow:0 0 0 4px rgba(52,211,153,.18)}
+.name-input::placeholder{color:#66738f;font-size:15px}
+.rank-save-btn{flex-shrink:0;background:linear-gradient(135deg,#34d399,#10b981 60%,#6366f1 140%);color:#04150e;border:none;padding:13px 18px;font-size:16px;font-weight:900;border-radius:999px;cursor:pointer;box-shadow:0 10px 24px rgba(52,211,153,.35);font-family:inherit}
+.rank-save-btn:active{transform:scale(.97)}
+.rank-save-btn:disabled{opacity:.55;cursor:default;box-shadow:none}
+.name-saved{font-size:14.5px;color:#a7f3d0;font-weight:800;margin-top:10px;line-height:1.5}
+.ranking-card{width:100%;background:linear-gradient(160deg,rgba(24,20,58,.92),rgba(8,10,26,.96));border:1px solid rgba(251,191,36,.45);border-radius:24px;padding:16px 16px 10px;margin-bottom:14px;box-shadow:0 20px 44px rgba(0,0,0,.45),0 0 30px rgba(251,191,36,.12)}
+.ranking-title{font-size:19px;font-weight:900;color:#fff;text-align:center;margin-bottom:4px}
+.ranking-title .gold{background:linear-gradient(90deg,#fde68a,#f59e0b,#fde68a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ranking-sub{font-size:13px;color:var(--muted);font-weight:700;text-align:center;margin-bottom:12px}
+.rank-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;margin-bottom:6px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.06)}
+.rank-row.me{background:linear-gradient(90deg,rgba(52,211,153,.20),rgba(139,92,246,.18));border-color:rgba(52,211,153,.65)}
+.rank-no{width:30px;height:30px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#cbd5e1;background:rgba(255,255,255,.09)}
+.rank-row:nth-child(1) .rank-no{background:linear-gradient(135deg,#fde68a,#f59e0b);color:#451a03;box-shadow:0 0 14px rgba(245,158,11,.6)}
+.rank-row:nth-child(2) .rank-no{background:linear-gradient(135deg,#f1f5f9,#94a3b8);color:#1e293b}
+.rank-row:nth-child(3) .rank-no{background:linear-gradient(135deg,#fdba74,#c2703d);color:#431407}
+.rank-name{flex:1;min-width:0;font-size:16.5px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.rank-el{font-size:12.5px;font-weight:800;color:#aeb9d6;white-space:nowrap}
+.rank-score{font-size:18px;font-weight:900;color:#fde68a;white-space:nowrap}
+.ranking-empty{font-size:15px;color:var(--muted);font-weight:700;text-align:center;padding:12px 0 16px;line-height:1.6}
+.combo-text{position:absolute;font-size:20px;font-weight:900;color:#f9a8d4;pointer-events:none;animation:floatUp .6s ease-out forwards;text-shadow:0 0 14px rgba(236,72,153,.9);z-index:10;white-space:nowrap}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-42px) scale(1.35)}}
+</style>
+</head>
+<body>
+<div id="game-container">
+<canvas id="canvas"></canvas>
+<div class="ui-layer">
+  <div>
+    <div class="header">
+      <div class="score-card">
+        <div class="score-label">SCORE</div>
+        <div id="score">0</div>
+        <div class="high-score">BEST <span id="high-score">0</span></div>
+      </div>
+      <div class="header-right">
+        <div class="element-badge" id="current-element-badge"><span id="element-num">1/118</span> <strong id="element-name" style="color:#a78bfa">H (水素)</strong></div>
+        <button class="pause-btn" id="pause-btn">❚❚ 一時停止</button>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <span class="progress-label">OGANESSON</span>
+      <div class="progress-track"><div id="progress-bar"></div></div>
+      <span class="progress-next" id="progress-next">あと 117</span>
+    </div>
+    <div class="progress-wrap">
+      <span class="progress-label">EVOLUTION</span>
+      <div class="progress-track"><div id="evo-bar" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#22d3ee,#818cf8);box-shadow:0 0 12px rgba(34,211,238,.7);transition:width .25s"></div></div>
+      <span class="progress-next" id="evo-next">進化まで 1回</span>
+    </div>
+    <div class="progress-wrap">
+      <span class="progress-label">STABILITY</span>
+      <div class="progress-track"><div id="stability-bar" style="height:100%;width:100%;border-radius:99px;background:linear-gradient(90deg,#34d399,#a3e635);box-shadow:0 0 12px rgba(52,211,153,.7);transition:width .25s"></div></div>
+      <span class="progress-next" id="stability-text">100%</span>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <div class="logo-orb">Og</div>
+    <div class="kicker">Quantum Alchemy</div>
+    <h1>元素融合<br><span class="grad">アルケミー・フュージョン</span></h1>
+    <p class="subtitle">下部をスワイプして自機を動かし、同種の元素を融合。危険な雷物質を避け、118番元素オガネソンを目指そう。</p>
+    <div class="chips"><span class="chip">⚛ 全118元素</span><span class="chip">✦ スキル覚醒</span><span class="chip">🔥 超高難易度</span></div>
+    <button class="btn" id="start-btn">ゲームスタート</button>
+    <div class="howto">同じ元素を何度か融合すると進化（終盤は最大4回必要）<br>上位元素に触れると安定度が低下し、No.60からは安定度が時間でも減っていく<br>格下の元素はスコアに、雷はゲームオーバー</div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="skill-overlay">
+  <div class="panel">
+    <div class="kicker">Resonance Evolution</div>
+    <h1>共鳴進化<br><span class="grad">能力覚醒</span></h1>
+    <p class="subtitle">進化の共鳴によりアビリティが覚醒した。<br>強化するスキルを1つ選択せよ。</p>
+    <div class="skill-container" id="skill-choices"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="pause-overlay">
+  <div class="panel">
+    <div class="kicker">Paused</div>
+    <h1>一時停止</h1>
+    <p class="subtitle">実験は一時中断されています。</p>
+    <button class="btn" id="resume-btn">ゲームに戻る</button>
+    <button class="btn btn-ghost" id="retry-btn">最初からやり直す</button>
+  </div>
+</div>
+</div>
+<script>
+class SoundController{
+  constructor(){this.ctx=null}
+  init(){if(!this.ctx){try{this.ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}}
+  tone(type,f0,f1,dur,vol){if(!this.ctx)return;const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type=type;o.frequency.setValueAtTime(f0,this.ctx.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),this.ctx.currentTime+dur);g.gain.setValueAtTime(vol,this.ctx.currentTime);g.gain.exponentialRampToValueAtTime(.01,this.ctx.currentTime+dur);o.connect(g);g.connect(this.ctx.destination);o.start();o.stop(this.ctx.currentTime+dur)}
+  playCollect(f=440){this.tone('sine',f,f*1.4,.08,.25)}
+  playFusion(){this.tone('triangle',220,900,.22,.4)}
+  playExplode(){this.tone('sawtooth',180,30,.35,.5)}
+  playNearMiss(){this.tone('sine',700,1400,.12,.3)}
+  playSkillPick(){this.tone('sine',400,880,.3,.3)}
+}
+const RAW_ELEMENTS=[
+[1,'H','水素','#66fcf1'],[2,'He','ヘリウム','#ffbd59'],[3,'Li','リチウム','#ff5757'],[4,'Be','ベリリウム','#5ce1e6'],[5,'B','ホウ素','#c1ff72'],[6,'C','炭素','#ffffff'],[7,'N','窒素','#00c2cb'],[8,'O','酸素','#ff66c4'],[9,'F','フッ素','#cb6ce6'],[10,'Ne','ネオン','#ff914d'],[11,'Na','ナトリウム','#f1c40f'],[12,'Mg','マグネシウム','#2ecc71'],[13,'Al','アルミニウム','#95a5a6'],[14,'Si','ケイ素','#3498db'],[15,'P','リン','#e67e22'],[16,'S','硫黄','#f39c12'],[17,'Cl','塩素','#1abc9c'],[18,'Ar','アルゴン','#9b59b6'],[19,'K','カリウム','#d35400'],[20,'Ca','カルシウム','#ecf0f1'],[21,'Sc','スカンジウム','#bdc3c7'],[22,'Ti','チタン','#7f8c8d'],[23,'V','バナジウム','#a8b6c8'],[24,'Cr','クロム','#00d2d3'],[25,'Mn','マンガン','#ff9ff3'],[26,'Fe','鉄','#54a0ff'],[27,'Co','コバルト','#8e7bff'],[28,'Ni','ニッケル','#c8d6e5'],[29,'Cu','銅','#ff6b6b'],[30,'Zn','亜鉛','#1dd1a1'],[31,'Ga','ガリウム','#feca57'],[32,'Ge','ゲルマニウム','#48dbfb'],[33,'As','ヒ素','#ff9ff3'],[34,'Se','セレン','#54a0ff'],[35,'Br','臭素','#ee5253'],[36,'Kr','クリプトン','#00d2d3'],[37,'Rb','ルビジウム','#ff4d4d'],[38,'Sr','ストロンチウム','#ffaf40'],[39,'Y','イットリウム','#c56cf0'],[40,'Zr','ジルコニウム','#7d5fff'],[41,'Nb','ニオブ','#18dcff'],[42,'Mo','モリブデン','#3ae374'],[43,'Tc','テクネチウム','#ff3838'],[44,'Ru','ルテニウム','#9aa5b1'],[45,'Rh','ロジウム','#fff200'],[46,'Pd','パラジウム','#cd84f1'],[47,'Ag','銀','#ffffff'],[48,'Cd','カドミウム','#ff9f1a'],[49,'In','インジウム','#17c0eb'],[50,'Sn','スズ','#a29bfe'],[51,'Sb','アンチモン','#b2bec3'],[52,'Te','テルル','#ffb8b8'],[53,'I','ヨウ素','#67e6dc'],[54,'Xe','キセノン','#fff200'],[55,'Cs','セシウム','#ff3838'],[56,'Ba','バリウム','#17c0eb'],[57,'La','ランタン','#3ae374'],[58,'Ce','セリウム','#ff9f1a'],[59,'Pr','プラセオジム','#c56cf0'],[60,'Nd','ネオジム','#7d5fff'],[61,'Pm','プロメチウム','#ff4d4d'],[62,'Sm','サマリウム','#18dcff'],[63,'Eu','ユウロピウム','#a29bfe'],[64,'Gd','ガドリニウム','#fff200'],[65,'Tb','テルビウム','#3ae374'],[66,'Dy','ジスプロシウム','#ffaf40'],[67,'Ho','ホルミウム','#ffb8b8'],[68,'Er','エルビウム','#67e6dc'],[69,'Tm','ツリウム','#17c0eb'],[70,'Yb','イッテルビウム','#c56cf0'],[71,'Lu','ルテチウム','#7d5fff'],[72,'Hf','ハフニウム','#ff7675'],[73,'Ta','タンタル','#b2bec3'],[74,'W','タングステン','#dfe6e9'],[75,'Re','レニウム','#ff9f1a'],[76,'Os','オスミウム','#54a0ff'],[77,'Ir','イリジウム','#00d2d3'],[78,'Pt','白金','#ffffff'],[79,'Au','金','#ffd700'],[80,'Hg','水銀','#bdc3c7'],[81,'Tl','タリウム','#95a5a6'],[82,'Pb','鉛','#a4b0be'],[83,'Bi','ビスマス','#ff9ff3'],[84,'Po','ポロニウム','#ee5253'],[85,'At','アスタチン','#2e86de'],[86,'Rn','ラドン','#10ac84'],[87,'Fr','フランシウム','#ff9f43'],[88,'Ra','ラジウム','#00d2d3'],[89,'Ac','アクチニウム','#54a0ff'],[90,'Th','トリウム','#8e7bff'],[91,'Pa','プロトアクチニウム','#ff6b6b'],[92,'U','ウラン','#1dd1a1'],[93,'Np','ネプツニウム','#feca57'],[94,'Pu','プルトニウム','#ff4d4d'],[95,'Am','アメリシウム','#48dbfb'],[96,'Cm','キュリウム','#c56cf0'],[97,'Bk','バークリウム','#18dcff'],[98,'Cf','カリフォルニウム','#3ae374'],[99,'Es','アインシュタニウム','#fff200'],[100,'Fm','フェルミウム','#ff3838'],[101,'Md','メンデレビウム','#17c0eb'],[102,'No','ノーベリウム','#7d5fff'],[103,'Lr','ローレンシウム','#ffaf40'],[104,'Rf','ラザホージウム','#ff66c4'],[105,'Db','ドブニウム','#00c2cb'],[106,'Sg','シーボーギウム','#c1ff72'],[107,'Bh','ボーリウム','#5ce1e6'],[108,'Hs','ハッシウム','#ff5757'],[109,'Mt','マイトネリウム','#ffbd59'],[110,'Ds','ダームスタチウム','#66fcf1'],[111,'Rg','レントゲニウム','#ffd700'],[112,'Cn','コペルニシウム','#78e08f'],[113,'Nh','ニホニウム','#ff78ae'],[114,'Fl','フレロビウム','#38ada9'],[115,'Mc','モスコビウム','#fa983a'],[116,'Lv','リバモリウム','#eb2f06'],[117,'Ts','テネシン','#74b9ff'],[118,'Og','オガネソン','#f8c291']];
+const ELEMENTS=RAW_ELEMENTS.map((e,idx)=>({z:e[0],symbol:e[1],name:e[2],color:e[3],radius:15+(idx/117)*45}));
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d'),sounds=new SoundController();
+let width,height,gameState='START',score=0,highScore=parseInt(localStorage.getItem('alchemy_ult_highscore')||'0');
+let player={x:0,y:0,tier:0,targetX:0,targetY:0,shield:0};
+let skills={slow:0,shieldMax:0,magnet:0,bonusRate:1};
+let fusionCount=0,fusionProgress=0,stability=100,gameTime=0,touchStartPos={x:0,y:0},playerStartPos={x:0,y:0},isTouching=false;
+player.invuln=0;
+function needFusions(){const z=player.tier+1;return z<=29?1:z<=59?2:z<=89?3:4}
+function phaseParams(){const z=player.tier+1;if(z<30)return{same:.55,danger:.18};if(z<60)return{same:.40,danger:.26};if(z<90)return{same:.30,danger:.28};return{same:.26,danger:.30}}
+let atoms=[],particles=[],screenShake=0,spawnTimer=0;
+function resize(){const r=canvas.parentElement.getBoundingClientRect();width=canvas.width=r.width;height=canvas.height=r.height;if(gameState==='START'){player.x=width/2;player.y=height*.5;player.targetX=player.x;player.targetY=player.y}}
+window.addEventListener('resize',resize);resize();
+const scoreEl=document.getElementById('score'),highScoreEl=document.getElementById('high-score'),overlay=document.getElementById('overlay'),skillOverlay=document.getElementById('skill-overlay'),pauseOverlay=document.getElementById('pause-overlay'),skillChoices=document.getElementById('skill-choices'),elementNameEl=document.getElementById('element-name'),elementNumEl=document.getElementById('element-num'),badgeEl=document.getElementById('current-element-badge'),progressBar=document.getElementById('progress-bar'),progressNext=document.getElementById('progress-next'),evoBar=document.getElementById('evo-bar'),evoNext=document.getElementById('evo-next'),stabilityBar=document.getElementById('stability-bar'),stabilityText=document.getElementById('stability-text');
+function updateStability(){const v=Math.max(0,Math.min(100,Math.round(stability)));stabilityBar.style.width=v+'%';stabilityBar.style.background=v>50?'linear-gradient(90deg,#34d399,#a3e635)':v>25?'linear-gradient(90deg,#fbbf24,#f59e0b)':'linear-gradient(90deg,#ef4444,#ec4899)';stabilityText.textContent=v+'%';stabilityText.style.color=v>25?'':'#fda4af'}
+highScoreEl.textContent=highScore;
+function getClientPos(e){const r=canvas.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top}}
+function beginMove(e){if(gameState!=='PLAYING')return;sounds.init();isTouching=true;touchStartPos=getClientPos(e);playerStartPos={x:player.targetX,y:player.targetY}}
+function doMove(e){if(gameState!=='PLAYING'||!isTouching)return;const p=getClientPos(e);player.targetX=playerStartPos.x+(p.x-touchStartPos.x);player.targetY=playerStartPos.y+(p.y-touchStartPos.y)}
+window.addEventListener('touchstart',beginMove,{passive:false});window.addEventListener('touchmove',doMove,{passive:false});window.addEventListener('touchend',()=>isTouching=false);
+window.addEventListener('mousedown',beginMove);window.addEventListener('mousemove',doMove);window.addEventListener('mouseup',()=>isTouching=false);
+document.getElementById('start-btn').addEventListener('click',startGame);
+document.getElementById('retry-btn').addEventListener('click',startGame);
+document.getElementById('pause-btn').addEventListener('click',()=>{if(gameState==='PLAYING'){gameState='PAUSED';pauseOverlay.classList.remove('hidden')}});
+document.getElementById('resume-btn').addEventListener('click',()=>{pauseOverlay.classList.add('hidden');gameState='PLAYING'});
+function startGame(){sounds.init();gameState='PLAYING';score=0;gameTime=0;spawnTimer=0;fusionCount=0;fusionProgress=0;stability=100;player.invuln=0;atoms=[];particles=[];player.tier=0;player.x=width/2;player.y=height*.5;player.targetX=player.x;player.targetY=player.y;skills={slow:0,shieldMax:0,magnet:0,bonusRate:1};player.shield=0;scoreEl.textContent='0';updateBadge();updateStability();overlay.classList.add('hidden');pauseOverlay.classList.add('hidden');skillOverlay.classList.add('hidden')}
+function updateBadge(){const el=ELEMENTS[player.tier];elementNumEl.textContent=`${el.z}/118`;elementNameEl.textContent=`${el.symbol} (${el.name})`;elementNameEl.style.color=el.color;badgeEl.style.borderColor=el.color;progressBar.style.width=Math.max(1,el.z/118*100)+'%';progressNext.textContent=el.z>=118?'到達！':`あと ${118-el.z}`;const need=needFusions();evoBar.style.width=(el.z>=118?100:fusionProgress/need*100)+'%';evoNext.textContent=el.z>=118?'進化 完了':'進化まで '+(need-fusionProgress)+'回'}
+function triggerSkillPick(){gameState='SKILL_PICK';sounds.playSkillPick();skillChoices.innerHTML='';const all=[{id:'slow',title:'タイム・ディレイ',desc:'敵と原子の移動速度をスローダウンさせる（最大3回まで）',ok:skills.slow<3},{id:'shield',title:'クォンタム・シールド',desc:'雷を1回だけ防ぐバリアを獲得。発動時の爆発は周囲だけを消す',ok:player.shield<1},{id:'magnet',title:'マグネット・フィールド',desc:'同種の原子を引き寄せる重力場を拡張する（最大3回まで）',ok:skills.magnet<4.5},{id:'bonus',title:'エナジー・ブースト',desc:'獲得スコアの倍率がアップする',ok:true}].filter(s=>s.ok);[...all].sort(()=>.5-Math.random()).slice(0,3).forEach(s=>{const c=document.createElement('div');c.className='skill-card';c.innerHTML=`<h3>${s.title}</h3><p>${s.desc}</p>`;c.addEventListener('click',()=>{applySkill(s.id);skillOverlay.classList.add('hidden');gameState='PLAYING'});skillChoices.appendChild(c)});skillOverlay.classList.remove('hidden')}
+function applySkill(id){if(id==='slow')skills.slow=Math.min(3,skills.slow+1);if(id==='shield'){skills.shieldMax=1;player.shield=1}if(id==='magnet')skills.magnet=Math.min(4.5,skills.magnet+1.5);if(id==='bonus')skills.bonusRate+=.5;showComboText(width/2,height/2,'スキル習得！')}
+function createExplosion(x,y,color,count=18){for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,s=Math.random()*5+1.5;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,radius:Math.random()*3.5+1.5,color,alpha:1,decay:Math.random()*.03+.015})}}
+function showComboText(x,y,text){const el=document.createElement('div');el.className='combo-text';el.textContent=text;el.style.left=x+'px';el.style.top=y+'px';document.getElementById('game-container').appendChild(el);setTimeout(()=>el.remove(),600)}
+function spawnAtom(){const P=phaseParams(),z=player.tier+1,roll=Math.random(),isDanger=roll<P.danger;let tier=player.tier;if(!isDanger){if(roll<P.danger+P.same)tier=player.tier;else if(Math.random()<.75&&player.tier>0)tier=Math.max(0,player.tier-Math.floor(Math.random()*3+1));else tier=Math.min(player.tier+1,ELEMENTS.length-1)}const radius=isDanger?16:ELEMENTS[tier].radius,side=Math.floor(Math.random()*4);let x,y;let baseSpeed=(Math.random()*1.3+1+gameTime*.005)*(1+z*.008);if(isDanger&&z>=95)baseSpeed*=1.15;if(side===0){x=Math.random()*width;y=-radius}else if(side===1){x=width+radius;y=Math.random()*height}else if(side===2){x=Math.random()*width;y=height+radius}else{x=-radius;y=Math.random()*height}const a=Math.atan2(height/2-y,width/2-x)+(Math.random()-.5);atoms.push({x,y,vx:Math.cos(a)*baseSpeed,vy:Math.sin(a)*baseSpeed,radius,isDanger,tier,nearMissed:false,age:0,seed:Math.random()*Math.PI*2})}
+function triggerQuantumBomb(){const R=190;screenShake=16;sounds.playExplode();createExplosion(player.x,player.y,'#8b5cf6',50);atoms=atoms.filter(a=>{const d=Math.hypot(a.x-player.x,a.y-player.y);if(d<=R+ a.radius){createExplosion(a.x,a.y,a.isDanger?'#ff3366':ELEMENTS[a.tier].color,8);return false}return true});showComboText(player.x,player.y-44,'量子爆発！（範囲内のみ）')}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function rgbOf(hex){const n=parseInt(hex.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
+function mixRgb(hex,amt,white){const[r,g,b]=rgbOf(hex);const f=v=>Math.round(white?v+(255-v)*amt:v*(1-amt));return`rgb(${f(r)},${f(g)},${f(b)})`}
+function drawElementOrb(x,y,r,color,symbol,t,isPlayer){
+  const[cr,cg,cb]=rgbOf(color);
+  ctx.save();
+  // ふわりと広がるグロー
+  const glow=ctx.createRadialGradient(x,y,r*.3,x,y,r*(isPlayer?2.1:1.7));
+  glow.addColorStop(0,`rgba(${cr},${cg},${cb},.45)`);glow.addColorStop(1,`rgba(${cr},${cg},${cb},0)`);
+  ctx.fillStyle=glow;ctx.beginPath();ctx.arc(x,y,r*(isPlayer?2.1:1.7),0,Math.PI*2);ctx.fill();
+  if(isPlayer){
+    // 回転する二重の魔法陣リング
+    ctx.save();ctx.translate(x,y);ctx.rotate(t*.7);
+    ctx.beginPath();ctx.arc(0,0,r+16,0,Math.PI*2);ctx.strokeStyle='rgba(52,211,153,.75)';ctx.lineWidth=2.5;ctx.setLineDash([10,7]);ctx.shadowColor='#34d399';ctx.shadowBlur=12;ctx.stroke();ctx.restore();
+    ctx.save();ctx.translate(x,y);ctx.rotate(-t*.45);
+    ctx.beginPath();ctx.arc(0,0,r+24,0,Math.PI*2);ctx.strokeStyle=`rgba(${cr},${cg},${cb},.55)`;ctx.lineWidth=1.5;ctx.setLineDash([3,9]);ctx.stroke();ctx.restore();
+  }
+  // 傾いた電子軌道と電子
+  const orbits=isPlayer?2:1;
+  for(let o=0;o<orbits;o++){
+    const rx=r*(1.28+o*.16),ry=r*(.46+o*.07),spin=t*(isPlayer?1.1:.6)*(o?-1:1)+o*1.7,tilt=-.55+o*.5;
+    ctx.save();ctx.translate(x,y);ctx.rotate(tilt);
+    ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);ctx.strokeStyle=`rgba(255,255,255,${isPlayer?.38:.20})`;ctx.lineWidth=isPlayer?1.6:1;ctx.stroke();
+    const ne=isPlayer?3:2;
+    for(let k=0;k<ne;k++){const a=spin+k*(Math.PI*2/ne),ex=Math.cos(a)*rx,ey=Math.sin(a)*ry;
+      ctx.beginPath();ctx.arc(ex,ey,isPlayer?3.4:2.4,0,Math.PI*2);ctx.fillStyle=o?'#fde68a':'#ffffff';ctx.shadowColor=o?'#f59e0b':'#ffffff';ctx.shadowBlur=8;ctx.fill();ctx.shadowBlur=0}
+    ctx.restore();
+  }
+  // 立体グラデーションの本体（宝石風）
+  const body=ctx.createRadialGradient(x-r*.38,y-r*.42,r*.12,x,y,r*1.05);
+  body.addColorStop(0,mixRgb(color,.88,true));body.addColorStop(.32,mixRgb(color,.38,true));body.addColorStop(.68,color);body.addColorStop(1,mixRgb(color,.42,false));
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=body;ctx.shadowColor=color;ctx.shadowBlur=isPlayer?22:12;ctx.fill();ctx.shadowBlur=0;
+  ctx.lineWidth=1.6;ctx.strokeStyle='rgba(255,255,255,.65)';ctx.stroke();
+  ctx.beginPath();ctx.arc(x,y,r-3.5,0,Math.PI*2);ctx.strokeStyle=`rgba(${cr},${cg},${cb},.5)`;ctx.lineWidth=1;ctx.stroke();
+  // ツヤ（ハイライト）
+  ctx.save();ctx.translate(x-r*.34,y-r*.44);ctx.rotate(-.6);
+  ctx.beginPath();ctx.ellipse(0,0,r*.30,r*.15,0,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.55)';ctx.fill();ctx.restore();
+  ctx.beginPath();ctx.arc(x+r*.30,y+r*.34,r*.10,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.20)';ctx.fill();
+  // 元素記号
+  ctx.fillStyle='#0b0620';ctx.font=`900 ${Math.max(10,Math.floor(r*.78))}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineWidth=3;ctx.strokeStyle='rgba(255,255,255,.35)';ctx.strokeText(symbol,x,y+1);ctx.fillText(symbol,x,y+1);
+  ctx.restore();
+}
+function drawDangerOrb(x,y,r,t){
+  ctx.save();
+  const glow=ctx.createRadialGradient(x,y,r*.3,x,y,r*1.9);glow.addColorStop(0,'rgba(255,51,102,.5)');glow.addColorStop(1,'rgba(255,51,102,0)');
+  ctx.fillStyle=glow;ctx.beginPath();ctx.arc(x,y,r*1.9,0,Math.PI*2);ctx.fill();
+  // トゲトゲの危険リング
+  ctx.save();ctx.translate(x,y);ctx.rotate(t*1.4);ctx.beginPath();
+  for(let i=0;i<16;i++){const a=i/16*Math.PI*2,rr=i%2?r+3:r+9;ctx[i?'lineTo':'moveTo'](Math.cos(a)*rr,Math.sin(a)*rr)}
+  ctx.closePath();ctx.fillStyle='rgba(255,180,60,.9)';ctx.shadowColor='#ffb43c';ctx.shadowBlur=10;ctx.fill();ctx.restore();
+  const body=ctx.createRadialGradient(x-r*.35,y-r*.4,r*.1,x,y,r);
+  body.addColorStop(0,'#ffd6de');body.addColorStop(.35,'#ff5c84');body.addColorStop(.72,'#e0113f');body.addColorStop(1,'#7f0d26');
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=body;ctx.shadowColor='#ff3366';ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0;
+  ctx.lineWidth=1.5;ctx.strokeStyle='rgba(255,255,255,.7)';ctx.stroke();
+  ctx.save();ctx.translate(x-r*.32,y-r*.42);ctx.rotate(-.6);ctx.beginPath();ctx.ellipse(0,0,r*.28,r*.13,0,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.55)';ctx.fill();ctx.restore();
+  ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('⚡',x,y+1);
+  ctx.restore();
+}
+function generateResultImage(el,score,highScore,survivalTimeSec,isNewRecord){
+const cv=document.createElement('canvas');cv.width=600;cv.height=600;const s=cv.getContext('2d');
+const bg=s.createRadialGradient(300,240,40,300,300,520);bg.addColorStop(0,'#3b2f8f');bg.addColorStop(.55,'#17123d');bg.addColorStop(1,'#030308');s.fillStyle=bg;s.fillRect(0,0,600,600);
+// decorative orbs + grid
+[[90,90,90,'rgba(139,92,246,.20)'],[520,120,70,'rgba(52,211,153,.16)'],[500,500,110,'rgba(236,72,153,.14)']].forEach(([x,y,r,c])=>{s.beginPath();s.arc(x,y,r,0,Math.PI*2);s.fillStyle=c;s.fill()});
+s.strokeStyle='rgba(167,139,250,.10)';s.lineWidth=1;for(let x=0;x<=600;x+=30){s.beginPath();s.moveTo(x,0);s.lineTo(x,600);s.stroke()}for(let y=0;y<=600;y+=30){s.beginPath();s.moveTo(0,y);s.lineTo(600,y);s.stroke()}
+// frame + inner card
+const fg=s.createLinearGradient(30,30,570,570);fg.addColorStop(0,'#8b5cf6');fg.addColorStop(.5,'#ec4899');fg.addColorStop(1,'#34d399');s.strokeStyle=fg;s.lineWidth=3;roundRect(s,26,26,548,548,28);s.stroke();
+s.fillStyle='rgba(8,10,28,.55)';roundRect(s,44,44,512,512,22);s.fill();
+// header
+s.textAlign='center';s.fillStyle='#34d399';s.font='900 16px sans-serif';s.fillText('Q U A N T U M A L C H E M Y',300,82);
+s.fillStyle='#ffffff';s.font='900 34px sans-serif';s.fillText(isNewRecord?'新記録達成！':'実験レポート',300,120);
+// element orb with rings
+s.beginPath();s.arc(300,205,66,0,Math.PI*2);s.strokeStyle='rgba(167,139,250,.45)';s.lineWidth=1.5;s.stroke();
+s.beginPath();s.arc(300,205,56,0,Math.PI*2);s.fillStyle=el.color;s.shadowColor=el.color;s.shadowBlur=34;s.fill();s.shadowBlur=0;
+s.fillStyle='#0b0620';s.font='900 40px sans-serif';s.textBaseline='middle';s.fillText(el.symbol,300,206);s.textBaseline='alphabetic';
+s.fillStyle='#fff';s.font='900 27px sans-serif';s.fillText(`No.${el.z} ${el.name}`,300,298);
+s.fillStyle='#c3cbe4';s.font='800 16px sans-serif';s.fillText(`到達進捗 ${el.z} / 118`,300,324);
+// progress
+s.fillStyle='rgba(255,255,255,.12)';roundRect(s,150,330,300,7,4);s.fill();const pg=s.createLinearGradient(150,0,450,0);pg.addColorStop(0,'#8b5cf6');pg.addColorStop(.6,'#ec4899');pg.addColorStop(1,'#34d399');s.fillStyle=pg;roundRect(s,150,330,Math.max(10,300*el.z/118),7,4);s.fill();
+// stat boxes
+const box=(x,y,label,val,green)=>{s.fillStyle='rgba(15,20,46,.92)';roundRect(s,x,y,224,82,16);s.fill();s.strokeStyle='rgba(167,139,250,.4)';s.lineWidth=1.5;roundRect(s,x,y,224,82,16);s.stroke();s.textAlign='left';s.fillStyle='#aeb9d6';s.font='900 15px sans-serif';s.fillText(label,x+18,y+29);s.fillStyle=green?'#34d399':'#c4b5fd';s.font='900 32px sans-serif';s.fillText(val,x+18,y+66);s.textAlign='center'};
+box(64,362,'最終スコア',String(score),false);box(312,362,'最高スコア',String(highScore),true);
+box(64,458,'到達元素',`No.${el.z} / 118`,false);box(312,458,'生存時間',`${survivalTimeSec} 秒`,true);
+s.fillStyle='#aeb9d6';s.font='800 16px sans-serif';s.fillText('究極のオガネソンを目指せ！ #AlchemyFusion',300,572-22);
+return cv.toDataURL('image/png');
+}
+const RANK_KEY='alchemy_fusion_ranking_v1',NAME_KEY='alchemy_fusion_player_name';
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function loadRanking(){try{const r=JSON.parse(localStorage.getItem(RANK_KEY)||'[]');return Array.isArray(r)?r.filter(e=>e&&typeof e.score==='number').slice(0,10):[]}catch(e){return[]}}
+function renderRanking(meId){
+  const list=loadRanking();
+  if(!list.length)return `<div class="ranking-title">🏆 <span class="gold">ランキング TOP 10</span></div><div class="ranking-sub">この端末に保存されます</div><div class="ranking-empty">まだ記録がありません。<br>名前を登録して最初のランクインを目指そう！</div>`;
+  const medals=['1','2','3'];
+  const rows=list.map((e,i)=>`<div class="rank-row ${e.id===meId?'me':''}"><div class="rank-no">${medals[i]||i+1}</div><div class="rank-name">${escapeHtml(e.name||'名無しプレイヤー')}</div><div class="rank-el">No.${e.z||1} ${escapeHtml(e.symbol||'H')}</div><div class="rank-score">${e.score}</div></div>`).join('');
+  return `<div class="ranking-title">🏆 <span class="gold">ランキング TOP 10</span></div><div class="ranking-sub">この端末に保存されます</div><div>${rows}</div>`;
+}
+function gameOver(reason='danger'){
+if(gameState==='GAMEOVER')return;
+const isCollapse=reason==='collapse';
+gameState='GAMEOVER';screenShake=18;sounds.playExplode();createExplosion(player.x,player.y,'#ff5757',45);
+const isNewRecord=score>highScore;
+if(isNewRecord){highScore=score;localStorage.setItem('alchemy_ult_highscore',highScore);highScoreEl.textContent=highScore}
+const el=ELEMENTS[player.tier],survivalTimeSec=Math.floor(gameTime);
+const dataUrl=generateResultImage(el,score,highScore,survivalTimeSec,isNewRecord);
+const tweetText=`\n実験結果: No.${el.z} ${el.symbol} (${el.name}) 到達！\nスコア: ${score} pt (最高記録: ${highScore} pt)\n究極の元素オガネソンを目指せ！`;
+overlay.innerHTML=`
+<div class="result-wrapper">
+<div class="result-record ${isNewRecord?'':'normal'}">${isNewRecord?'★ New Record':'Experiment Report'}</div>
+<div class="result-main-title">${isCollapse?'原子が崩壊した…':isNewRecord?'新記録達成！':'実験終了'}</div>
+<div class="result-sub">到達元素 ― No.${el.z} ${el.symbol}（${el.name}）${isCollapse?'<br>安定度がゼロになり原子が崩壊しました':''}</div>
+<div class="result-stats">
+<div class="stat"><div class="k">SCORE</div><div class="v violet">${score}</div></div>
+<div class="stat"><div class="k">BEST</div><div class="v green">${highScore}</div></div>
+<div class="stat"><div class="k">ELEMENT</div><div class="v">${el.z} <span style="font-size:16px;color:#aeb9d6">/ 118</span></div></div>
+<div class="stat"><div class="k">TIME</div><div class="v green">${survivalTimeSec}秒</div></div>
+</div>
+<div class="name-card">
+<div class="nk">PLAYER NAME</div>
+<div class="nt">名前を入れてランキングに登録しよう</div>
+<div class="name-row">
+<input class="name-input" id="player-name-input" type="text" maxlength="12" placeholder="名前を入力（12文字まで）" value="${escapeHtml(localStorage.getItem(NAME_KEY)||'')}">
+<button class="rank-save-btn" id="rank-save-btn">登録する</button>
+</div>
+<div class="name-saved" id="rank-save-msg"></div>
+</div>
+<div class="ranking-card" id="ranking-area">${renderRanking(null)}</div>
+<div class="result-preview-card">
+<img src="${dataUrl}" class="result-preview-img" alt="リザルト画像プレビュー">
+<div class="save-instruction">画像を長押しで「写真」アプリへ保存できます</div>
+</div>
+<div class="action-button-group">
+<button class="btn btn-share" id="share-btn">𝕏 でシェア</button>
+<button class="btn" id="retry-btn-dynamic">もう一度プレイ</button>
+</div>
+</div>`;
+document.getElementById('share-btn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(tweetText)}catch(e){}window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`,'_blank')});
+document.getElementById('retry-btn-dynamic').addEventListener('click',()=>location.reload());
+let rankSaved=false;
+const saveRank=()=>{
+  if(rankSaved)return;
+  const input=document.getElementById('player-name-input');
+  const name=(input.value||'').trim()||'名無しプレイヤー';
+  localStorage.setItem(NAME_KEY,name);
+  const entry={id:Date.now(),name,score,z:el.z,symbol:el.symbol,element:el.name,time:survivalTimeSec,date:new Date().toISOString()};
+  const list=loadRanking();list.push(entry);list.sort((a,b)=>b.score-a.score);
+  const trimmed=list.slice(0,10);
+  localStorage.setItem(RANK_KEY,JSON.stringify(trimmed));
+  const myRank=trimmed.findIndex(e=>e.id===entry.id);
+  rankSaved=true;
+  const btn=document.getElementById('rank-save-btn');btn.disabled=true;btn.textContent='登録済み ✓';
+  input.disabled=true;
+  document.getElementById('ranking-area').innerHTML=renderRanking(entry.id);
+  document.getElementById('rank-save-msg').textContent=myRank>=0?`🎉 ${myRank+1}位にランクインしました！`:`今回はTOP10圏外でした（${list.length}件中）。次はランクインを目指そう！`;
+};
+document.getElementById('rank-save-btn').addEventListener('click',saveRank);
+document.getElementById('player-name-input').addEventListener('keydown',e=>{if(e.key==='Enter')saveRank();e.stopPropagation()});
+overlay.classList.remove('hidden');
+}
+let lastTime=performance.now(),animT=0;
+function loop(currentTime){
+const dt=(currentTime-lastTime)/1000;lastTime=currentTime;animT=currentTime/1000;ctx.clearRect(0,0,width,height);
+if(screenShake>0){ctx.save();ctx.translate((Math.random()-.5)*screenShake,(Math.random()-.5)*screenShake);screenShake*=.88;if(screenShake<.5)screenShake=0}
+if(gameState==='PLAYING'){
+gameTime+=dt;const slowFactor=1/(1+skills.slow*.3);
+if(player.invuln>0)player.invuln-=dt;
+{const zNow=player.tier+1;if(zNow>=60){stability-=(zNow>=90?1.8:1.3)*dt;if(stability<=0){stability=0;updateStability();gameOver('collapse')}else updateStability()}}
+player.x+=(player.targetX-player.x)*.22;player.y+=(player.targetY-player.y)*.22;
+const curRadius=ELEMENTS[player.tier].radius;
+player.x=Math.max(curRadius,Math.min(width-curRadius,player.x));player.y=Math.max(curRadius,Math.min(height-curRadius,player.y));
+player.targetX=Math.max(curRadius,Math.min(width-curRadius,player.targetX));player.targetY=Math.max(curRadius,Math.min(height-curRadius,player.targetY));
+spawnTimer+=dt;{const zNow=player.tier+1,baseInt=zNow<30?.66:zNow<60?.56:zNow<90?.46:.36,interval=Math.max(.30,baseInt-Math.min(.08,gameTime*.002));if(spawnTimer>interval){spawnAtom();spawnTimer=0}}
+const magnetRange=skills.magnet*35;
+for(let i=atoms.length-1;i>=0;i--){
+const a=atoms[i];a.age=(a.age||0)+dt;
+if(a.isDanger){const zNow=player.tier+1;
+  if(zNow>=40&&a.age<=3){const curA=Math.atan2(a.vy,a.vx),wantA=Math.atan2(player.y-a.y,player.x-a.x);let diff=wantA-curA;while(diff>Math.PI)diff-=Math.PI*2;while(diff<-Math.PI)diff+=Math.PI*2;const turnRate=zNow>=70?.45:.3,turn=Math.max(-turnRate*dt,Math.min(turnRate*dt,diff)),sp=Math.hypot(a.vx,a.vy),na=curA+turn;a.vx=Math.cos(na)*sp;a.vy=Math.sin(na)*sp}
+  a.x+=a.vx*slowFactor;a.y+=a.vy*slowFactor;
+  if(zNow>=70){const px=-a.vy,py=a.vx,pl=Math.hypot(px,py)||1,wob=Math.sin(a.age*6+(a.seed||0))*.9;a.x+=px/pl*wob;a.y+=py/pl*wob}
+}else{a.x+=a.vx*slowFactor;a.y+=a.vy*slowFactor}
+const dx=player.x-a.x,dy=player.y-a.y,dist=Math.hypot(dx,dy);
+if(!a.isDanger&&a.tier===player.tier&&magnetRange>0&&dist<magnetRange+curRadius&&dist>0){a.x+=(dx/dist)*3;a.y+=(dy/dist)*3}
+if(a.isDanger&&!a.nearMissed&&dist<curRadius+a.radius+18&&dist>=curRadius+a.radius){a.nearMissed=true;score+=Math.floor(20*skills.bonusRate);scoreEl.textContent=score;sounds.playNearMiss();showComboText(a.x,a.y,'ギリギリ回避 +20')}
+if(dist<curRadius+a.radius){
+if(a.isDanger){
+if(player.shield>0){player.shield--;triggerQuantumBomb();showComboText(player.x,player.y-30,'シールド発動！');break}
+gameOver();break;
+}else{
+if(a.tier===player.tier){
+sounds.playFusion();createExplosion(a.x,a.y,ELEMENTS[player.tier].color,15);
+fusionCount++;fusionProgress++;stability=Math.min(100,stability+5);updateStability();
+if(player.tier>=ELEMENTS.length-1){score+=Math.floor(200*skills.bonusRate);showComboText(player.x,player.y-20,'究極オガネソン！ +200');fusionProgress=0}
+else if(fusionProgress>=needFusions()){player.tier++;fusionProgress=0;score+=Math.floor((player.tier+1)*25*skills.bonusRate);stability=Math.min(100,stability+12);updateStability();showComboText(player.x,player.y-20,'融合！レベルアップ')}
+else{score+=Math.floor(15*skills.bonusRate);showComboText(player.x,player.y-20,`融合 ${fusionProgress}/${needFusions()}`)}
+updateBadge();screenShake=5;
+if(fusionCount%20===0)triggerSkillPick();
+}else if(a.tier<player.tier){sounds.playCollect(300+a.tier*8);createExplosion(a.x,a.y,ELEMENTS[a.tier].color,8);score+=Math.floor((a.tier+1)*5*skills.bonusRate);stability=Math.min(100,stability+1);updateStability()}
+else{
+if(player.invuln<=0){stability-=25;player.invuln=1;screenShake=11;sounds.playExplode();createExplosion(a.x,a.y,'#f59e0b',16);showComboText(player.x,player.y-24,'不安定化！ 安定度-25');updateStability();if(stability<=0){stability=0;scoreEl.textContent=score;atoms.splice(i,1);gameOver('collapse');break}}
+else showComboText(player.x,player.y,'重すぎる！（無敵時間中）');
+}
+scoreEl.textContent=score;atoms.splice(i,1);continue;
+}
+}
+if(a.x<-60||a.x>width+60||a.y<-60||a.y>height+60)atoms.splice(i,1);
+}
+}
+for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.alpha-=p.decay;if(p.alpha<=0){particles.splice(i,1);continue}ctx.save();ctx.globalAlpha=p.alpha;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fill();ctx.restore()}
+atoms.forEach(a=>{if(a.isDanger){drawDangerOrb(a.x,a.y,a.radius,animT)}else{const el=ELEMENTS[a.tier];drawElementOrb(a.x,a.y,a.radius,el.color,el.symbol,animT,false)}});
+if(['PLAYING','PAUSED','SKILL_PICK'].includes(gameState)){
+const el=ELEMENTS[player.tier];
+if(skills.magnet>0){ctx.save();ctx.beginPath();ctx.arc(player.x,player.y,skills.magnet*35+el.radius,0,Math.PI*2);ctx.strokeStyle='rgba(52,211,153,.22)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.stroke();ctx.restore()}
+if(player.shield>0){ctx.save();ctx.beginPath();ctx.arc(player.x,player.y,el.radius+34,0,Math.PI*2);ctx.strokeStyle='#a78bfa';ctx.lineWidth=3;ctx.shadowColor='#8b5cf6';ctx.shadowBlur=14;ctx.setLineDash([14,6]);ctx.lineDashOffset=-animT*30;ctx.stroke();ctx.restore()}
+if(player.invuln>0){ctx.save();ctx.beginPath();ctx.arc(player.x,player.y,el.radius+40,0,Math.PI*2);ctx.strokeStyle='rgba(251,191,36,.8)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.stroke();ctx.restore()}
+drawElementOrb(player.x,player.y,el.radius,el.color,el.symbol,animT,true);
+}
+if(screenShake>0)ctx.restore();
+requestAnimationFrame(loop);
+}
+updateBadge();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
