@@ -229,7 +229,7 @@ function triggerSkillPick(){gameState='SKILL_PICK';sounds.playSkillPick();skillC
 function applySkill(id){if(id==='slow')skills.slow=Math.min(3,skills.slow+1);if(id==='shield'){skills.shieldMax=1;player.shield=1}if(id==='magnet')skills.magnet=Math.min(4.5,skills.magnet+1.5);if(id==='bonus')skills.bonusRate+=.5;showComboText(width/2,height/2,'スキル習得！')}
 function createExplosion(x,y,color,count=18){for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,s=Math.random()*5+1.5;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,radius:Math.random()*3.5+1.5,color,alpha:1,decay:Math.random()*.03+.015})}}
 function showComboText(x,y,text){const el=document.createElement('div');el.className='combo-text';el.textContent=text;el.style.left=x+'px';el.style.top=y+'px';document.getElementById('game-container').appendChild(el);setTimeout(()=>el.remove(),600)}
-function spawnAtom(){const P=phaseParams(),z=player.tier+1,roll=Math.random(),isDanger=roll<P.danger;let tier=player.tier;if(!isDanger){if(roll<P.danger+P.same)tier=player.tier;else if(Math.random()<.75&&player.tier>0)tier=Math.max(0,player.tier-Math.floor(Math.random()*3+1));else tier=Math.min(player.tier+1,ELEMENTS.length-1)}const radius=isDanger?16:ELEMENTS[tier].radius,side=Math.floor(Math.random()*4);let x,y;let baseSpeed=(Math.random()*1.3+1+gameTime*.005)*(1+z*.008);if(isDanger&&z>=95)baseSpeed*=1.15;if(side===0){x=Math.random()*width;y=-radius}else if(side===1){x=width+radius;y=Math.random()*height}else if(side===2){x=Math.random()*width;y=height+radius}else{x=-radius;y=Math.random()*height}const a=Math.atan2(height/2-y,width/2-x)+(Math.random()-.5);atoms.push({x,y,vx:Math.cos(a)*baseSpeed,vy:Math.sin(a)*baseSpeed,radius,isDanger,tier,nearMissed:false,age:0,seed:Math.random()*Math.PI*2})}
+function spawnAtom(){const P=phaseParams(),z=player.tier+1,roll=Math.random(),isDanger=roll<P.danger;let tier=player.tier;if(!isDanger){if(roll<P.danger+P.same)tier=player.tier;else if(Math.random()<.5&&player.tier>0)tier=Math.max(0,player.tier-Math.floor(Math.random()*3+1));else tier=Math.min(player.tier+1,ELEMENTS.length-1)}const radius=isDanger?16:ELEMENTS[tier].radius,side=Math.floor(Math.random()*4);let x,y;let baseSpeed=(Math.random()*1.3+1+gameTime*.005)*(1+z*.008);if(isDanger&&z>=95)baseSpeed*=1.15;if(side===0){x=Math.random()*width;y=-radius}else if(side===1){x=width+radius;y=Math.random()*height}else if(side===2){x=Math.random()*width;y=height+radius}else{x=-radius;y=Math.random()*height}const a=Math.atan2(height/2-y,width/2-x)+(Math.random()-.5);atoms.push({x,y,vx:Math.cos(a)*baseSpeed,vy:Math.sin(a)*baseSpeed,radius,isDanger,tier,nearMissed:false,age:0,seed:Math.random()*Math.PI*2})}
 function triggerQuantumBomb(){const R=190;screenShake=16;sounds.playExplode();createExplosion(player.x,player.y,'#8b5cf6',50);atoms=atoms.filter(a=>{const d=Math.hypot(a.x-player.x,a.y-player.y);if(d<=R+ a.radius){createExplosion(a.x,a.y,a.isDanger?'#ff3366':ELEMENTS[a.tier].color,8);return false}return true});showComboText(player.x,player.y-44,'量子爆発！（範囲内のみ）')}
 function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
 function rgbOf(hex){const n=parseInt(hex.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
@@ -429,15 +429,15 @@ gameOver();break;
 }else{
 if(a.tier===player.tier){
 sounds.playFusion();createExplosion(a.x,a.y,ELEMENTS[player.tier].color,15);
-fusionCount++;fusionProgress++;stability=Math.min(100,stability+5);updateStability();
+fusionCount++;fusionProgress++;stability=Math.min(100,stability+2);updateStability();
 if(player.tier>=ELEMENTS.length-1){score+=Math.floor(200*skills.bonusRate);showComboText(player.x,player.y-20,'究極オガネソン！ +200');fusionProgress=0}
-else if(fusionProgress>=needFusions()){player.tier++;fusionProgress=0;score+=Math.floor((player.tier+1)*25*skills.bonusRate);stability=Math.min(100,stability+12);updateStability();showComboText(player.x,player.y-20,'融合！レベルアップ')}
+else if(fusionProgress>=needFusions()){player.tier++;fusionProgress=0;score+=Math.floor((player.tier+1)*25*skills.bonusRate);stability=Math.min(100,stability+6);updateStability();showComboText(player.x,player.y-20,'融合！レベルアップ')}
 else{score+=Math.floor(15*skills.bonusRate);showComboText(player.x,player.y-20,`融合 ${fusionProgress}/${needFusions()}`)}
 updateBadge();screenShake=5;
 if(fusionCount%20===0)triggerSkillPick();
 }else if(a.tier<player.tier){sounds.playCollect(300+a.tier*8);createExplosion(a.x,a.y,ELEMENTS[a.tier].color,8);score+=Math.floor((a.tier+1)*5*skills.bonusRate);stability=Math.min(100,stability+1);updateStability()}
 else{
-if(player.invuln<=0){stability-=25;player.invuln=1;screenShake=11;sounds.playExplode();createExplosion(a.x,a.y,'#f59e0b',16);showComboText(player.x,player.y-24,'不安定化！ 安定度-25');updateStability();if(stability<=0){stability=0;scoreEl.textContent=score;atoms.splice(i,1);gameOver('collapse');break}}
+if(player.invuln<=0){stability-=50;player.invuln=1;screenShake=11;sounds.playExplode();createExplosion(a.x,a.y,'#f59e0b',16);showComboText(player.x,player.y-24,'不安定化！ 安定度-50');updateStability();if(stability<=0){stability=0;scoreEl.textContent=score;atoms.splice(i,1);gameOver('collapse');break}}
 else showComboText(player.x,player.y,'重すぎる！（無敵時間中）');
 }
 scoreEl.textContent=score;atoms.splice(i,1);continue;
