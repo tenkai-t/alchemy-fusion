@@ -118,6 +118,9 @@ p.subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:cente
 .rank-save-btn:disabled{opacity:.55;cursor:default;box-shadow:none}
 .name-saved{font-size:14.5px;color:#a7f3d0;font-weight:800;margin-top:10px;line-height:1.5}
 .ranking-card{width:100%;background:linear-gradient(160deg,rgba(24,20,58,.92),rgba(8,10,26,.96));border:1px solid rgba(251,191,36,.45);border-radius:24px;padding:16px 16px 10px;margin-bottom:14px;box-shadow:0 20px 44px rgba(0,0,0,.45),0 0 30px rgba(251,191,36,.12)}
+.rank-tabs{display:flex;gap:8px;margin-bottom:12px}
+.rank-tab{flex:1;padding:9px 0;border-radius:999px;border:1px solid rgba(167,139,250,.45);background:rgba(255,255,255,.05);color:#c4b5fd;font-weight:900;font-size:14px;cursor:pointer;font-family:inherit}
+.rank-tab.active{background:linear-gradient(90deg,#8b5cf6,#6366f1);color:#fff;border-color:transparent}
 .ranking-title{font-size:19px;font-weight:900;color:#fff;text-align:center;margin-bottom:4px}
 .ranking-title .gold{background:linear-gradient(90deg,#fde68a,#f59e0b,#fde68a);-webkit-background-clip:text;background-clip:text;color:transparent}
 .ranking-sub{font-size:13px;color:var(--muted);font-weight:700;text-align:center;margin-bottom:12px}
@@ -348,6 +351,41 @@ function renderRanking(meId){
   const rows=list.map((e,i)=>`<div class="rank-row ${e.id===meId?'me':''}"><div class="rank-no">${medals[i]||i+1}</div><div class="rank-name">${escapeHtml(e.name||'名無しプレイヤー')}</div><div class="rank-el">No.${e.z||1} ${escapeHtml(e.symbol||'H')}</div><div class="rank-score">${e.score}</div></div>`).join('');
   return `<div class="ranking-title">🏆 <span class="gold">ランキング TOP 10</span></div><div class="ranking-sub">この端末に保存されます</div><div>${rows}</div>`;
 }
+const RANK_API='https://alchemy-fusion-ranking.t-t14.workers.dev';
+const DEVICE_KEY='alchemy_fusion_device_id';
+function deviceId(){try{let id=localStorage.getItem(DEVICE_KEY);if(!id){id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'dev-'+Date.now()+'-'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);localStorage.setItem(DEVICE_KEY,id)}return id}catch(e){return 'dev-unknown'}}
+let rankTab='online',onlineData=null,onlineError=false,onlineMeId=null,lastLocalEntryId=null;
+function renderOnlineRanking(){
+  const head=`<div class="ranking-title">🏆 <span class="gold">オンラインランキング TOP 10</span></div><div class="ranking-sub">みんなの記録</div>`;
+  if(onlineError)return head+`<div class="ranking-empty">オンラインに接続できませんでした。<br>「この端末」タブで端末内の記録が見られます。</div>`;
+  if(!onlineData)return head+`<div class="ranking-empty">読み込み中…</div>`;
+  const list=onlineData.top||[];
+  if(!list.length)return head+`<div class="ranking-empty">まだオンラインの記録がありません。<br>名前を登録して最初のランクインを目指そう！</div>`;
+  const medals=['1','2','3'];
+  const rows=list.map((e,i)=>`<div class="rank-row ${e.id===onlineMeId?'me':''}"><div class="rank-no">${medals[i]||i+1}</div><div class="rank-name">${escapeHtml(e.name||'名無しプレイヤー')}</div><div class="rank-el">No.${e.z||1} ${escapeHtml(ELEMENTS[Math.max(0,(e.z||1)-1)].symbol)}</div><div class="rank-score">${e.score}</div></div>`).join('');
+  let foot='';
+  if(onlineData.myBest&&onlineData.myRank>10)foot=`<div class="ranking-sub" style="margin:8px 0 6px">あなたのベストは ${onlineData.myRank} 位（${onlineData.myBest.score} pt）</div>`;
+  return head+`<div>${rows}</div>`+foot;
+}
+function rankingCardHtml(){
+  const tabs=`<div class="rank-tabs"><button type="button" class="rank-tab ${rankTab==='online'?'active':''}" data-rank-tab="online">オンライン</button><button type="button" class="rank-tab ${rankTab==='local'?'active':''}" data-rank-tab="local">この端末</button></div>`;
+  return tabs+(rankTab==='online'?renderOnlineRanking():renderRanking(lastLocalEntryId));
+}
+function refreshRankingArea(){const area=document.getElementById('ranking-area');if(area)area.innerHTML=rankingCardHtml()}
+async function loadOnlineRanking(){
+  try{const res=await fetch(`${RANK_API}/ranking?uuid=${encodeURIComponent(deviceId())}`);if(!res.ok)throw new Error('bad status');onlineData=await res.json();onlineError=false}
+  catch(e){onlineError=true}
+  if(rankTab==='online')refreshRankingArea();
+}
+async function submitOnlineScore(name,entry){
+  const msg=document.getElementById('rank-save-msg');
+  try{
+    const res=await fetch(`${RANK_API}/scores`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uuid:deviceId(),name,score:entry.score,z:entry.z,time:entry.time})});
+    const data=await res.json().catch(()=>null);
+    if(res.ok&&data&&data.ok){onlineMeId=data.id;onlineData=null;await loadOnlineRanking();if(msg)msg.textContent+=` オンラインでは ${data.rank} 位です！`}
+    else if(msg)msg.textContent+='（オンライン登録はできませんでした）';
+  }catch(e){if(msg)msg.textContent+='（オンライン登録はできませんでした）'}
+}
 function gameOver(reason='danger'){
 if(gameState==='GAMEOVER')return;
 const isCollapse=reason==='collapse';
@@ -357,6 +395,7 @@ if(isNewRecord){highScore=score;localStorage.setItem('alchemy_ult_highscore',hig
 const el=ELEMENTS[player.tier],survivalTimeSec=Math.floor(gameTime);
 const dataUrl=generateResultImage(el,score,highScore,survivalTimeSec,isNewRecord);
 const tweetText=`\n実験結果: No.${el.z} ${el.symbol} (${el.name}) 到達！\nスコア: ${score} pt (最高記録: ${highScore} pt)\n究極の元素オガネソンを目指せ！\n#アルケミー・フュージョン`;
+rankTab='online';onlineMeId=null;lastLocalEntryId=null;
 overlay.innerHTML=`
 <div class="result-wrapper">
 <div class="result-record ${isNewRecord?'':'normal'}">${isNewRecord?'★ New Record':'Experiment Report'}</div>
@@ -378,7 +417,7 @@ overlay.innerHTML=`
 </div>
 <div class="name-saved" id="rank-save-msg"></div>
 </div>
-<div class="ranking-card" id="ranking-area">${renderRanking(null)}</div>
+<div class="ranking-card" id="ranking-area">${rankingCardHtml()}</div>
 <div class="result-preview-card">
 <img src="${dataUrl}" class="result-preview-img" alt="リザルト画像プレビュー">
 <div class="save-instruction">画像を長押しで「写真」アプリへ保存できます</div>
@@ -390,6 +429,8 @@ overlay.innerHTML=`
 </div>`;
 document.getElementById('share-btn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(tweetText)}catch(e){}window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`,'_blank')});
 document.getElementById('retry-btn-dynamic').addEventListener('click',()=>location.reload());
+document.querySelectorAll('[data-rank-tab]').forEach(b=>b.addEventListener('click',()=>{rankTab=b.dataset.rankTab;refreshRankingArea();if(rankTab==='online'&&!onlineData&&!onlineError)loadOnlineRanking()}));
+loadOnlineRanking();
 let rankSaved=false;
 const saveRank=()=>{
   if(rankSaved)return;
@@ -403,8 +444,9 @@ const saveRank=()=>{
   rankSaved=true;
   const btn=document.getElementById('rank-save-btn');btn.disabled=true;btn.textContent='登録済み ✓';
   input.disabled=true;
-  document.getElementById('ranking-area').innerHTML=renderRanking(entry.id);
+  lastLocalEntryId=entry.id;refreshRankingArea();
   document.getElementById('rank-save-msg').textContent=myRank>=0?`🎉 ${myRank+1}位にランクインしました！`:`今回はTOP10圏外でした（${list.length}件中）。次はランクインを目指そう！`;
+  submitOnlineScore(name,entry);
 };
 document.getElementById('rank-save-btn').addEventListener('click',saveRank);
 document.getElementById('player-name-input').addEventListener('keydown',e=>{if(e.key==='Enter')saveRank();e.stopPropagation()});
