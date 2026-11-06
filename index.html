@@ -338,7 +338,7 @@ box(64,362,'最終スコア',String(score),false);box(312,362,'最高スコア',
 box(64,458,'到達元素',`No.${el.z} / 118`,false);box(312,458,'生存時間',`${survivalTimeSec} 秒`,true);
 return cv.toDataURL('image/png');
 }
-const RANK_KEY='alchemy_fusion_ranking_v1',NAME_KEY='alchemy_fusion_player_name';
+const RANK_KEY='alchemy_fusion_ranking_v1';
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function loadRanking(){try{const r=JSON.parse(localStorage.getItem(RANK_KEY)||'[]');return Array.isArray(r)?r.filter(e=>e&&typeof e.score==='number').slice(0,10):[]}catch(e){return[]}}
 function renderRanking(meId){
@@ -373,7 +373,7 @@ overlay.innerHTML=`
 <div class="nk">PLAYER NAME</div>
 <div class="nt">名前を入れてランキングに登録しよう</div>
 <div class="name-row">
-<input class="name-input" id="player-name-input" type="text" maxlength="12" placeholder="名前を入力（12文字まで）" value="${escapeHtml(localStorage.getItem(NAME_KEY)||'')}">
+<input class="name-input" id="player-name-input" type="text" maxlength="12" placeholder="名前を入力（12文字まで）">
 <button class="rank-save-btn" id="rank-save-btn">登録する</button>
 </div>
 <div class="name-saved" id="rank-save-msg"></div>
@@ -395,7 +395,6 @@ const saveRank=()=>{
   if(rankSaved)return;
   const input=document.getElementById('player-name-input');
   const name=(input.value||'').trim()||'名無しプレイヤー';
-  localStorage.setItem(NAME_KEY,name);
   const entry={id:Date.now(),name,score,z:el.z,symbol:el.symbol,element:el.name,time:survivalTimeSec,date:new Date().toISOString()};
   const list=loadRanking();list.push(entry);list.sort((a,b)=>b.score-a.score);
   const trimmed=list.slice(0,10);
