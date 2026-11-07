@@ -250,7 +250,7 @@ function triggerQuantumBomb(){const R=190;screenShake=16;sounds.playExplode();cr
 function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
 function rgbOf(hex){const n=parseInt(hex.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
 function mixRgb(hex,amt,white){const[r,g,b]=rgbOf(hex);const f=v=>Math.round(white?v+(255-v)*amt:v*(1-amt));return`rgb(${f(r)},${f(g)},${f(b)})`}
-function drawElementOrb(x,y,r,color,symbol,t,isPlayer){
+function drawElementOrb(x,y,r,color,symbol,t,isPlayer,z){
   const[cr,cg,cb]=rgbOf(color);
   ctx.save();
   // ふわりと広がるグロー
@@ -288,6 +288,8 @@ function drawElementOrb(x,y,r,color,symbol,t,isPlayer){
   // 元素記号
   ctx.fillStyle='#0b0620';ctx.font=`900 ${Math.max(10,Math.floor(r*.78))}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.lineWidth=3;ctx.strokeStyle='rgba(255,255,255,.35)';ctx.strokeText(symbol,x,y+1);ctx.fillText(symbol,x,y+1);
+  // 原子番号（左上・黒文字、周期表スタイル）
+  if(z){ctx.fillStyle='rgba(22,11,51,.92)';ctx.font=`800 ${Math.max(9,Math.floor(r*.36))}px sans-serif`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(z,x-r*.60,y-r*.70)}
   ctx.restore();
 }
 function drawDangerOrb(x,y,r,t){
@@ -505,13 +507,13 @@ if(a.x<-60||a.x>width+60||a.y<-60||a.y>height+60)atoms.splice(i,1);
 }
 }
 for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.alpha-=p.decay;if(p.alpha<=0){particles.splice(i,1);continue}ctx.save();ctx.globalAlpha=p.alpha;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fill();ctx.restore()}
-atoms.forEach(a=>{if(a.isDanger){drawDangerOrb(a.x,a.y,a.radius,animT)}else{const el=ELEMENTS[a.tier];drawElementOrb(a.x,a.y,a.radius,el.color,el.symbol,animT,false)}});
+atoms.forEach(a=>{if(a.isDanger){drawDangerOrb(a.x,a.y,a.radius,animT)}else{const el=ELEMENTS[a.tier];drawElementOrb(a.x,a.y,a.radius,el.color,el.symbol,animT,false,el.z)}});
 if(['PLAYING','PAUSED','SKILL_PICK'].includes(gameState)){
 const el=ELEMENTS[player.tier];
 if(skills.magnet>0){ctx.save();ctx.beginPath();ctx.arc(player.x,player.y,skills.magnet*35+el.radius,0,Math.PI*2);ctx.strokeStyle='rgba(52,211,153,.22)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.stroke();ctx.restore()}
 if(player.shield>0){ctx.save();ctx.beginPath();ctx.arc(player.x,player.y,el.radius+34,0,Math.PI*2);ctx.strokeStyle='#a78bfa';ctx.lineWidth=3;ctx.shadowColor='#8b5cf6';ctx.shadowBlur=14;ctx.setLineDash([14,6]);ctx.lineDashOffset=-animT*30;ctx.stroke();ctx.restore()}
 if(player.invuln>0){ctx.save();ctx.beginPath();ctx.arc(player.x,player.y,el.radius+40,0,Math.PI*2);ctx.strokeStyle='rgba(251,191,36,.8)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.stroke();ctx.restore()}
-drawElementOrb(player.x,player.y,el.radius,el.color,el.symbol,animT,true);
+drawElementOrb(player.x,player.y,el.radius,el.color,el.symbol,animT,true,el.z);
 }
 if(screenShake>0)ctx.restore();
 requestAnimationFrame(loop);
