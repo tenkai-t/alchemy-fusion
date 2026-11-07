@@ -6,4 +6,4 @@ compatibility_date = "2025-06-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "alchemy-fusion-ranking-db"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "34ac3c48-b9ad-42d7-9163-34a45dd5be3c"
