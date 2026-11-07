@@ -286,10 +286,10 @@ function drawElementOrb(x,y,r,color,symbol,t,isPlayer,z){
   ctx.beginPath();ctx.ellipse(0,0,r*.30,r*.15,0,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.55)';ctx.fill();ctx.restore();
   ctx.beginPath();ctx.arc(x+r*.30,y+r*.34,r*.10,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.20)';ctx.fill();
   // 元素記号
-  ctx.fillStyle='#0b0620';ctx.font=`900 ${Math.max(10,Math.floor(r*.78))}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.lineWidth=3;ctx.strokeStyle='rgba(255,255,255,.35)';ctx.strokeText(symbol,x,y+1);ctx.fillText(symbol,x,y+1);
+  const small=r<22,symY=y+(small?2:1);ctx.fillStyle='#0b0620';ctx.font=`900 ${Math.max(10,Math.floor(small?r*.70:r*.78))}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineWidth=3;ctx.strokeStyle='rgba(255,255,255,.35)';ctx.strokeText(symbol,x,symY);ctx.fillText(symbol,x,symY);
   // 原子番号（左上・黒文字、周期表スタイル）
-  if(z){ctx.fillStyle='rgba(22,11,51,.92)';ctx.font=`800 ${Math.max(9,Math.floor(r*.36))}px sans-serif`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(z,x-r*.60,y-r*.70)}
+  if(z){ctx.fillStyle='rgba(22,11,51,.92)';ctx.font=`800 ${small?Math.max(8,r*.40):Math.max(9,Math.floor(r*.36))}px sans-serif`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(z,x-r*.64,y-r*.76)}
   ctx.restore();
 }
 function drawDangerOrb(x,y,r,t){
