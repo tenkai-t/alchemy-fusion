@@ -35,6 +35,8 @@
 body{background:#010104;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;overflow:hidden;touch-action:none;display:flex;justify-content:center;align-items:center;height:100vh}
 #game-container{position:relative;width:100vw;height:100vh;max-width:480px;max-height:854px;overflow:hidden;background:radial-gradient(1100px 700px at 50% -10%,#312e81 0%,transparent 60%),radial-gradient(800px 600px at 90% 110%,rgba(236,72,153,.20),transparent 55%),radial-gradient(circle at center,#17123d 0%,#030308 78%);box-shadow:0 0 60px rgba(139,92,246,.35)}
 #game-container::before{content:'';position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent,rgba(139,92,246,.07),transparent,rgba(52,211,153,.06),transparent);animation:aurora 24s linear infinite;pointer-events:none}
+#game-container.light::before{animation:none}
+.light-toggle{margin-top:10px}
 @keyframes aurora{to{transform:rotate(360deg)}}
 #game-container::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at center,transparent 55%,rgba(0,0,0,.55));pointer-events:none;z-index:2}
 canvas{width:100%;height:100%;display:block;position:relative;z-index:1}
@@ -179,6 +181,7 @@ p.subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:cente
     <h1>元素融合<br><span class="grad">アルケミー・フュージョン</span></h1>
     <p class="subtitle">下部をスワイプして自機を動かし、同種の元素を融合。危険な雷物質を避け、118番元素オガネソンを目指そう。</p>
     <button class="btn" id="start-btn">ゲームスタート</button>
+    <button class="btn btn-ghost light-toggle">軽量モード：OFF</button>
     <div class="howto">同じ元素を何度か融合すると進化（終盤は最大4回必要）<br>上位元素に触れると安定度が低下し、No.60からは安定度が時間でも減っていく<br>格下の元素はスコアに、雷はゲームオーバー</div>
   </div>
 </div>
@@ -199,6 +202,7 @@ p.subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:cente
     <p class="subtitle">実験は一時中断されています。</p>
     <button class="btn" id="resume-btn">ゲームに戻る</button>
     <button class="btn btn-ghost" id="retry-btn">最初からやり直す</button>
+    <button class="btn btn-ghost light-toggle">軽量モード：OFF</button>
   </div>
 </div>
 </div>
@@ -216,7 +220,7 @@ class SoundController{
 const RAW_ELEMENTS=[
 [1,'H','水素','#66fcf1'],[2,'He','ヘリウム','#ffbd59'],[3,'Li','リチウム','#ff5757'],[4,'Be','ベリリウム','#5ce1e6'],[5,'B','ホウ素','#c1ff72'],[6,'C','炭素','#ffffff'],[7,'N','窒素','#00c2cb'],[8,'O','酸素','#ff66c4'],[9,'F','フッ素','#cb6ce6'],[10,'Ne','ネオン','#ff914d'],[11,'Na','ナトリウム','#f1c40f'],[12,'Mg','マグネシウム','#2ecc71'],[13,'Al','アルミニウム','#95a5a6'],[14,'Si','ケイ素','#3498db'],[15,'P','リン','#e67e22'],[16,'S','硫黄','#f39c12'],[17,'Cl','塩素','#1abc9c'],[18,'Ar','アルゴン','#9b59b6'],[19,'K','カリウム','#d35400'],[20,'Ca','カルシウム','#ecf0f1'],[21,'Sc','スカンジウム','#bdc3c7'],[22,'Ti','チタン','#7f8c8d'],[23,'V','バナジウム','#a8b6c8'],[24,'Cr','クロム','#00d2d3'],[25,'Mn','マンガン','#ff9ff3'],[26,'Fe','鉄','#54a0ff'],[27,'Co','コバルト','#8e7bff'],[28,'Ni','ニッケル','#c8d6e5'],[29,'Cu','銅','#ff6b6b'],[30,'Zn','亜鉛','#1dd1a1'],[31,'Ga','ガリウム','#feca57'],[32,'Ge','ゲルマニウム','#48dbfb'],[33,'As','ヒ素','#ff9ff3'],[34,'Se','セレン','#54a0ff'],[35,'Br','臭素','#ee5253'],[36,'Kr','クリプトン','#00d2d3'],[37,'Rb','ルビジウム','#ff4d4d'],[38,'Sr','ストロンチウム','#ffaf40'],[39,'Y','イットリウム','#c56cf0'],[40,'Zr','ジルコニウム','#7d5fff'],[41,'Nb','ニオブ','#18dcff'],[42,'Mo','モリブデン','#3ae374'],[43,'Tc','テクネチウム','#ff3838'],[44,'Ru','ルテニウム','#9aa5b1'],[45,'Rh','ロジウム','#fff200'],[46,'Pd','パラジウム','#cd84f1'],[47,'Ag','銀','#ffffff'],[48,'Cd','カドミウム','#ff9f1a'],[49,'In','インジウム','#17c0eb'],[50,'Sn','スズ','#a29bfe'],[51,'Sb','アンチモン','#b2bec3'],[52,'Te','テルル','#ffb8b8'],[53,'I','ヨウ素','#67e6dc'],[54,'Xe','キセノン','#fff200'],[55,'Cs','セシウム','#ff3838'],[56,'Ba','バリウム','#17c0eb'],[57,'La','ランタン','#3ae374'],[58,'Ce','セリウム','#ff9f1a'],[59,'Pr','プラセオジム','#c56cf0'],[60,'Nd','ネオジム','#7d5fff'],[61,'Pm','プロメチウム','#ff4d4d'],[62,'Sm','サマリウム','#18dcff'],[63,'Eu','ユウロピウム','#a29bfe'],[64,'Gd','ガドリニウム','#fff200'],[65,'Tb','テルビウム','#3ae374'],[66,'Dy','ジスプロシウム','#ffaf40'],[67,'Ho','ホルミウム','#ffb8b8'],[68,'Er','エルビウム','#67e6dc'],[69,'Tm','ツリウム','#17c0eb'],[70,'Yb','イッテルビウム','#c56cf0'],[71,'Lu','ルテチウム','#7d5fff'],[72,'Hf','ハフニウム','#ff7675'],[73,'Ta','タンタル','#b2bec3'],[74,'W','タングステン','#dfe6e9'],[75,'Re','レニウム','#ff9f1a'],[76,'Os','オスミウム','#54a0ff'],[77,'Ir','イリジウム','#00d2d3'],[78,'Pt','白金','#ffffff'],[79,'Au','金','#ffd700'],[80,'Hg','水銀','#bdc3c7'],[81,'Tl','タリウム','#95a5a6'],[82,'Pb','鉛','#a4b0be'],[83,'Bi','ビスマス','#ff9ff3'],[84,'Po','ポロニウム','#ee5253'],[85,'At','アスタチン','#2e86de'],[86,'Rn','ラドン','#10ac84'],[87,'Fr','フランシウム','#ff9f43'],[88,'Ra','ラジウム','#00d2d3'],[89,'Ac','アクチニウム','#54a0ff'],[90,'Th','トリウム','#8e7bff'],[91,'Pa','プロトアクチニウム','#ff6b6b'],[92,'U','ウラン','#1dd1a1'],[93,'Np','ネプツニウム','#feca57'],[94,'Pu','プルトニウム','#ff4d4d'],[95,'Am','アメリシウム','#48dbfb'],[96,'Cm','キュリウム','#c56cf0'],[97,'Bk','バークリウム','#18dcff'],[98,'Cf','カリフォルニウム','#3ae374'],[99,'Es','アインシュタニウム','#fff200'],[100,'Fm','フェルミウム','#ff3838'],[101,'Md','メンデレビウム','#17c0eb'],[102,'No','ノーベリウム','#7d5fff'],[103,'Lr','ローレンシウム','#ffaf40'],[104,'Rf','ラザホージウム','#ff66c4'],[105,'Db','ドブニウム','#00c2cb'],[106,'Sg','シーボーギウム','#c1ff72'],[107,'Bh','ボーリウム','#5ce1e6'],[108,'Hs','ハッシウム','#ff5757'],[109,'Mt','マイトネリウム','#ffbd59'],[110,'Ds','ダームスタチウム','#66fcf1'],[111,'Rg','レントゲニウム','#ffd700'],[112,'Cn','コペルニシウム','#78e08f'],[113,'Nh','ニホニウム','#ff78ae'],[114,'Fl','フレロビウム','#38ada9'],[115,'Mc','モスコビウム','#fa983a'],[116,'Lv','リバモリウム','#eb2f06'],[117,'Ts','テネシン','#74b9ff'],[118,'Og','オガネソン','#f8c291']];
 const ELEMENTS=RAW_ELEMENTS.map((e,idx)=>({z:e[0],symbol:e[1],name:e[2],color:e[3],radius:15+(idx/117)*45}));
-const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d'),sounds=new SoundController();
+const canvas=document.getElementById('canvas'),sounds=new SoundController();let ctx=canvas.getContext('2d');
 let width,height,gameState='START',score=0,highScore=parseInt(localStorage.getItem('alchemy_ult_highscore')||'0');
 let player={x:0,y:0,tier:0,targetX:0,targetY:0,shield:0};
 let skills={slow:0,shieldMax:0,magnet:0,bonusRate:1};
@@ -239,11 +243,15 @@ document.getElementById('start-btn').addEventListener('click',startGame);
 document.getElementById('retry-btn').addEventListener('click',startGame);
 document.getElementById('pause-btn').addEventListener('click',()=>{if(gameState==='PLAYING'){gameState='PAUSED';pauseOverlay.classList.remove('hidden')}});
 document.getElementById('resume-btn').addEventListener('click',()=>{pauseOverlay.classList.add('hidden');gameState='PLAYING'});
+let lightMode=false;try{lightMode=localStorage.getItem('alchemy_fusion_light')==='1'}catch(e){}
+function setLightMode(v){lightMode=v;try{localStorage.setItem('alchemy_fusion_light',v?'1':'0')}catch(e){}document.querySelectorAll('.light-toggle').forEach(b=>{b.textContent=v?'軽量モード：ON':'軽量モード：OFF'});const gc=document.getElementById('game-container');if(gc)gc.classList.toggle('light',v)}
+document.querySelectorAll('.light-toggle').forEach(b=>b.addEventListener('click',()=>setLightMode(!lightMode)));
+setLightMode(lightMode);
 function startGame(){sounds.init();gameState='PLAYING';score=0;gameTime=0;spawnTimer=0;fusionCount=0;fusionProgress=0;stability=100;player.invuln=0;atoms=[];particles=[];player.tier=0;player.x=width/2;player.y=height*.5;player.targetX=player.x;player.targetY=player.y;skills={slow:0,shieldMax:0,magnet:0,bonusRate:1};player.shield=0;scoreEl.textContent='0';updateBadge();updateStability();overlay.classList.add('hidden');pauseOverlay.classList.add('hidden');skillOverlay.classList.add('hidden')}
 function updateBadge(){const el=ELEMENTS[player.tier];elementNumEl.textContent=`${el.z}/118`;elementNameEl.textContent=`${el.symbol} (${el.name})`;elementNameEl.style.color=el.color;badgeEl.style.borderColor=el.color;progressBar.style.width=Math.max(1,el.z/118*100)+'%';progressNext.textContent=el.z>=118?'到達！':`あと ${118-el.z}`;const need=needFusions();evoBar.style.width=(el.z>=118?100:fusionProgress/need*100)+'%';evoNext.textContent=el.z>=118?'進化 完了':'進化まで '+(need-fusionProgress)+'回'}
 function triggerSkillPick(){gameState='SKILL_PICK';sounds.playSkillPick();skillChoices.innerHTML='';const all=[{id:'slow',title:'タイム・ディレイ',desc:'敵と原子の移動速度をスローダウンさせる（最大3回まで）',ok:skills.slow<3},{id:'shield',title:'クォンタム・シールド',desc:'雷を1回だけ防ぐバリアを獲得。発動時の爆発は周囲だけを消す',ok:player.shield<1},{id:'magnet',title:'マグネット・フィールド',desc:'同種の原子を引き寄せる重力場を拡張する（最大3回まで）',ok:skills.magnet<4.5},{id:'bonus',title:'エナジー・ブースト',desc:'獲得スコアの倍率がアップする',ok:true}].filter(s=>s.ok);[...all].sort(()=>.5-Math.random()).slice(0,3).forEach(s=>{const c=document.createElement('div');c.className='skill-card';c.innerHTML=`<h3>${s.title}</h3><p>${s.desc}</p>`;c.addEventListener('click',()=>{applySkill(s.id);skillOverlay.classList.add('hidden');gameState='PLAYING'});skillChoices.appendChild(c)});skillOverlay.classList.remove('hidden')}
 function applySkill(id){if(id==='slow')skills.slow=Math.min(3,skills.slow+1);if(id==='shield'){skills.shieldMax=1;player.shield=1}if(id==='magnet')skills.magnet=Math.min(4.5,skills.magnet+1.5);if(id==='bonus')skills.bonusRate+=.5;showComboText(width/2,height/2,'スキル習得！')}
-function createExplosion(x,y,color,count=18){for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,s=Math.random()*5+1.5;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,radius:Math.random()*3.5+1.5,color,alpha:1,decay:Math.random()*.03+.015})}}
+function createExplosion(x,y,color,count=18){if(lightMode)count=Math.ceil(count/2);for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,s=Math.random()*5+1.5;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,radius:Math.random()*3.5+1.5,color,alpha:1,decay:Math.random()*.03+.015})}}
 function showComboText(x,y,text){const el=document.createElement('div');el.className='combo-text';el.textContent=text;el.style.left=x+'px';el.style.top=y+'px';document.getElementById('game-container').appendChild(el);setTimeout(()=>el.remove(),600)}
 function spawnAtom(){const P=phaseParams(),z=player.tier+1,roll=Math.random(),isDanger=roll<P.danger;let tier=player.tier;if(!isDanger){if(roll<P.danger+P.same)tier=player.tier;else if(Math.random()<P.small&&player.tier>0)tier=Math.max(0,player.tier-Math.floor(Math.random()*3+1));else tier=Math.min(player.tier+1,ELEMENTS.length-1)}const radius=isDanger?16:ELEMENTS[tier].radius,side=Math.floor(Math.random()*4);let x,y;let baseSpeed=(Math.random()*1.3+1+gameTime*.005)*(1+z*.008);if(isDanger&&z>=95)baseSpeed*=1.15;if(side===0){x=Math.random()*width;y=-radius}else if(side===1){x=width+radius;y=Math.random()*height}else if(side===2){x=Math.random()*width;y=height+radius}else{x=-radius;y=Math.random()*height}const a=Math.atan2(height/2-y,width/2-x)+(Math.random()-.5);atoms.push({x,y,vx:Math.cos(a)*baseSpeed,vy:Math.sin(a)*baseSpeed,radius,isDanger,tier,nearMissed:false,age:0,seed:Math.random()*Math.PI*2})}
 function triggerQuantumBomb(){const R=190;screenShake=16;sounds.playExplode();createExplosion(player.x,player.y,'#8b5cf6',50);atoms=atoms.filter(a=>{const d=Math.hypot(a.x-player.x,a.y-player.y);if(d<=R+ a.radius){createExplosion(a.x,a.y,a.isDanger?'#ff3366':ELEMENTS[a.tier].color,8);return false}return true});showComboText(player.x,player.y-44,'量子爆発！（範囲内のみ）')}
@@ -308,6 +316,9 @@ function drawDangerOrb(x,y,r,t){
   ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('⚡',x,y+1);
   ctx.restore();
 }
+const orbSpriteCache={};let dangerSpriteCache=null;
+function orbSprite(tier){let sp=orbSpriteCache[tier];if(sp)return sp;const el=ELEMENTS[tier],r=el.radius,half=Math.ceil(r*1.7)+2,cv=document.createElement('canvas');cv.width=cv.height=half*2;const main=ctx;ctx=cv.getContext('2d');drawElementOrb(half,half,r,el.color,el.symbol,0,false,el.z);ctx=main;sp={cv,half};orbSpriteCache[tier]=sp;return sp}
+function dangerSprite(){if(dangerSpriteCache)return dangerSpriteCache;const r=16,half=Math.ceil(r*1.9)+2,cv=document.createElement('canvas');cv.width=cv.height=half*2;const main=ctx;ctx=cv.getContext('2d');drawDangerOrb(half,half,r,0);ctx=main;dangerSpriteCache={cv,half};return dangerSpriteCache}
 function generateResultImage(el,score,highScore,survivalTimeSec,isNewRecord){
 const cv=document.createElement('canvas');cv.width=600;cv.height=600;const s=cv.getContext('2d');
 const bg=s.createRadialGradient(300,240,40,300,300,520);bg.addColorStop(0,'#3b2f8f');bg.addColorStop(.55,'#17123d');bg.addColorStop(1,'#030308');s.fillStyle=bg;s.fillRect(0,0,600,600);
@@ -506,7 +517,7 @@ if(a.x<-60||a.x>width+60||a.y<-60||a.y>height+60)atoms.splice(i,1);
 }
 }
 for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.alpha-=p.decay;if(p.alpha<=0){particles.splice(i,1);continue}ctx.save();ctx.globalAlpha=p.alpha;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fill();ctx.restore()}
-atoms.forEach(a=>{if(a.isDanger){drawDangerOrb(a.x,a.y,a.radius,animT)}else{const el=ELEMENTS[a.tier];drawElementOrb(a.x,a.y,a.radius,el.color,el.symbol,animT,false,el.z)}});
+atoms.forEach(a=>{if(lightMode){const sp=a.isDanger?dangerSprite():orbSprite(a.tier);ctx.drawImage(sp.cv,a.x-sp.half,a.y-sp.half)}else if(a.isDanger){drawDangerOrb(a.x,a.y,a.radius,animT)}else{const el=ELEMENTS[a.tier];drawElementOrb(a.x,a.y,a.radius,el.color,el.symbol,animT,false,el.z)}});
 if(['PLAYING','PAUSED','SKILL_PICK'].includes(gameState)){
 const el=ELEMENTS[player.tier];
 if(skills.magnet>0){ctx.save();ctx.beginPath();ctx.arc(player.x,player.y,skills.magnet*35+el.radius,0,Math.PI*2);ctx.strokeStyle='rgba(52,211,153,.22)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.stroke();ctx.restore()}
