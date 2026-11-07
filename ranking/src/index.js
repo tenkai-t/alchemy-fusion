@@ -29,6 +29,9 @@ function cleanName(v) {
   if (len < 1 || len > 12) return null;
   return name;
 }
+const NG_WORDS=['しね','死ね','ころす','殺す','くそ','ばか','あほ','きちがい','ちんこ','ちんちん','まんこ','おっぱい','せっくす','うんこ','うんち','じさつ','自殺','fuck','shit','dick','pussy','bitch','porn','sex'];
+function normalizeName(s){return String(s).replace(/[！-～]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).toLowerCase().replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[\s　・_.\-~〜]/g,'')}
+function isNgName(name){const n=normalizeName(name);return NG_WORDS.some(w=>n.includes(normalizeName(w)))}
 function intIn(v, min, max) {
   return Number.isInteger(v) && v >= min && v <= max;
 }
@@ -77,6 +80,7 @@ export default {
         const time = body && body.time;
         if (!validUuid(uuid)) return json({ error: 'invalid uuid' }, 400);
         if (name === null) return json({ error: 'invalid name' }, 400);
+        if (isNgName(name)) return json({ error: 'name not allowed' }, 400);
         if (!intIn(score, 0, 99999999)) return json({ error: 'invalid score' }, 400);
         if (!intIn(z, 1, 118)) return json({ error: 'invalid z' }, 400);
         if (!intIn(time, 0, 86400)) return json({ error: 'invalid time' }, 400);
