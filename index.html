@@ -354,6 +354,9 @@ function renderRanking(meId){
 const RANK_API='https://alchemy-fusion-ranking.t-t14.workers.dev';
 const DEVICE_KEY='alchemy_fusion_device_id';
 function deviceId(){try{let id=localStorage.getItem(DEVICE_KEY);if(!id){id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'dev-'+Date.now()+'-'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);localStorage.setItem(DEVICE_KEY,id)}return id}catch(e){return 'dev-unknown'}}
+const NG_WORDS=['しね','死ね','ころす','殺す','くそ','ばか','あほ','きちがい','ちんこ','ちんちん','まんこ','おっぱい','せっくす','うんこ','うんち','じさつ','自殺','fuck','shit','dick','pussy','bitch','porn','sex'];
+function normalizeName(s){return String(s).replace(/[！-～]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).toLowerCase().replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[\s　・_.\-~〜]/g,'')}
+function isNgName(name){const n=normalizeName(name);return NG_WORDS.some(w=>n.includes(normalizeName(w)))}
 let rankTab='online',onlineData=null,onlineError=false,onlineMeId=null,lastLocalEntryId=null;
 function renderOnlineRanking(){
   const head=`<div class="ranking-title">🏆 <span class="gold">オンラインランキング TOP 10</span></div><div class="ranking-sub">みんなの記録</div>`;
@@ -383,7 +386,7 @@ async function submitOnlineScore(name,entry){
     const res=await fetch(`${RANK_API}/scores`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uuid:deviceId(),name,score:entry.score,z:entry.z,time:entry.time})});
     const data=await res.json().catch(()=>null);
     if(res.ok&&data&&data.ok){onlineMeId=data.id;onlineData=null;await loadOnlineRanking();if(msg)msg.textContent+=` オンラインでは ${data.rank} 位です！`}
-    else if(msg)msg.textContent+='（オンライン登録はできませんでした）';
+    else if(msg)msg.textContent+=(data&&data.error==='name not allowed')?'（その名前はオンラインでは使えません）':'（オンライン登録はできませんでした）';
   }catch(e){if(msg)msg.textContent+='（オンライン登録はできませんでした）'}
 }
 function gameOver(reason='danger'){
@@ -429,13 +432,14 @@ overlay.innerHTML=`
 </div>`;
 document.getElementById('share-btn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(tweetText)}catch(e){}window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`,'_blank')});
 document.getElementById('retry-btn-dynamic').addEventListener('click',()=>location.reload());
-document.querySelectorAll('[data-rank-tab]').forEach(b=>b.addEventListener('click',()=>{rankTab=b.dataset.rankTab;refreshRankingArea();if(rankTab==='online'&&!onlineData&&!onlineError)loadOnlineRanking()}));
+document.getElementById('ranking-area').addEventListener('click',e=>{const b=e.target.closest('[data-rank-tab]');if(!b)return;rankTab=b.dataset.rankTab;refreshRankingArea();if(rankTab==='online'&&!onlineData&&!onlineError)loadOnlineRanking()});
 loadOnlineRanking();
 let rankSaved=false;
 const saveRank=()=>{
   if(rankSaved)return;
   const input=document.getElementById('player-name-input');
   const name=(input.value||'').trim()||'名無しプレイヤー';
+  if(isNgName(name)){document.getElementById('rank-save-msg').textContent='⚠️ この名前は使えません。別の名前を入力してください';return}
   const entry={id:Date.now(),name,score,z:el.z,symbol:el.symbol,element:el.name,time:survivalTimeSec,date:new Date().toISOString()};
   const list=loadRanking();list.push(entry);list.sort((a,b)=>b.score-a.score);
   const trimmed=list.slice(0,10);
