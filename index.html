@@ -182,6 +182,7 @@ p.subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:cente
     <p class="subtitle">下部をスワイプして自機を動かし、同種の元素を融合。危険な雷物質を避け、118番元素オガネソンを目指そう。</p>
     <button class="btn" id="start-btn">ゲームスタート</button>
     <button class="btn btn-ghost light-toggle">軽量モード：OFF</button>
+    <button class="btn btn-ghost" id="rank-open-btn" style="margin-top:10px">🏆 ランキング</button>
     <div class="howto">同じ元素を何度か融合すると進化（終盤は最大4回必要）<br>上位元素に触れると安定度が低下し、No.60からは安定度が時間でも減っていく<br>格下の元素はスコアに、雷はゲームオーバー</div>
   </div>
 </div>
@@ -192,6 +193,15 @@ p.subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:cente
     <h1>共鳴進化<br><span class="grad">能力覚醒</span></h1>
     <p class="subtitle">進化の共鳴によりアビリティが覚醒した。<br>強化するスキルを1つ選択せよ。</p>
     <div class="skill-container" id="skill-choices"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="ranking-overlay">
+  <div class="panel">
+    <div class="kicker">Ranking</div>
+    <h1>ランキング</h1>
+    <div class="ranking-card" id="ranking-area-start"></div>
+    <button class="btn" id="rank-close-btn">閉じる</button>
   </div>
 </div>
 
@@ -247,6 +257,10 @@ let lightMode=false;try{lightMode=localStorage.getItem('alchemy_fusion_light')==
 function setLightMode(v){lightMode=v;try{localStorage.setItem('alchemy_fusion_light',v?'1':'0')}catch(e){}document.querySelectorAll('.light-toggle').forEach(b=>{b.textContent=v?'軽量モード：ON':'軽量モード：OFF'});const gc=document.getElementById('game-container');if(gc)gc.classList.toggle('light',v)}
 document.querySelectorAll('.light-toggle').forEach(b=>b.addEventListener('click',()=>setLightMode(!lightMode)));
 setLightMode(lightMode);
+const rankingOverlay=document.getElementById('ranking-overlay');
+document.getElementById('rank-open-btn').addEventListener('click',()=>{refreshRankingArea();rankingOverlay.classList.remove('hidden');if(rankTab==='online'&&!onlineData&&!onlineError)loadOnlineRanking();if(rankTab==='month'&&!monthData&&!monthError)loadMonthRanking()});
+document.getElementById('rank-close-btn').addEventListener('click',()=>rankingOverlay.classList.add('hidden'));
+document.getElementById('ranking-area-start').addEventListener('click',onRankTabClick);
 function startGame(){sounds.init();gameState='PLAYING';score=0;gameTime=0;spawnTimer=0;fusionCount=0;fusionProgress=0;stability=100;player.invuln=0;atoms=[];particles=[];player.tier=0;player.x=width/2;player.y=height*.5;player.targetX=player.x;player.targetY=player.y;skills={slow:0,shieldMax:0,magnet:0,bonusRate:1};player.shield=0;scoreEl.textContent='0';updateBadge();updateStability();overlay.classList.add('hidden');pauseOverlay.classList.add('hidden');skillOverlay.classList.add('hidden')}
 function updateBadge(){const el=ELEMENTS[player.tier];elementNumEl.textContent=`${el.z}/118`;elementNameEl.textContent=`${el.symbol} (${el.name})`;elementNameEl.style.color=el.color;badgeEl.style.borderColor=el.color;progressBar.style.width=Math.max(1,el.z/118*100)+'%';progressNext.textContent=el.z>=118?'到達！':`あと ${118-el.z}`;const need=needFusions();evoBar.style.width=(el.z>=118?100:fusionProgress/need*100)+'%';evoNext.textContent=el.z>=118?'進化 完了':'進化まで '+(need-fusionProgress)+'回'}
 function triggerSkillPick(){gameState='SKILL_PICK';sounds.playSkillPick();skillChoices.innerHTML='';const all=[{id:'slow',title:'タイム・ディレイ',desc:'敵と原子の移動速度をスローダウンさせる（最大3回まで）',ok:skills.slow<3},{id:'shield',title:'クォンタム・シールド',desc:'雷を1回だけ防ぐバリアを獲得。発動時の爆発は周囲だけを消す',ok:player.shield<1},{id:'magnet',title:'マグネット・フィールド',desc:'同種の原子を引き寄せる重力場を拡張する（最大3回まで）',ok:skills.magnet<4.5},{id:'bonus',title:'エナジー・ブースト',desc:'獲得スコアの倍率がアップする',ok:true}].filter(s=>s.ok);[...all].sort(()=>.5-Math.random()).slice(0,3).forEach(s=>{const c=document.createElement('div');c.className='skill-card';c.innerHTML=`<h3>${s.title}</h3><p>${s.desc}</p>`;c.addEventListener('click',()=>{applySkill(s.id);skillOverlay.classList.add('hidden');gameState='PLAYING'});skillChoices.appendChild(c)});skillOverlay.classList.remove('hidden')}
@@ -371,34 +385,48 @@ const NG_WORDS=['しね','死ね','ころす','殺す','くそ','ばか','あほ
 function normalizeName(s){return String(s).replace(/[！-～]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).toLowerCase().replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[\s　・_.\-~〜]/g,'')}
 function isNgName(name){const n=normalizeName(name);return NG_WORDS.some(w=>n.includes(normalizeName(w)))}
 let rankTab='online',onlineData=null,onlineError=false,onlineMeId=null,lastLocalEntryId=null;
-function renderOnlineRanking(){
-  const head=`<div class="ranking-title">🏆 <span class="gold">オンラインランキング TOP 10</span></div><div class="ranking-sub">みんなの記録</div>`;
-  if(onlineError)return head+`<div class="ranking-empty">オンラインに接続できませんでした。<br>「この端末」タブで端末内の記録が見られます。</div>`;
-  if(!onlineData)return head+`<div class="ranking-empty">読み込み中…</div>`;
-  const list=onlineData.top||[];
-  if(!list.length)return head+`<div class="ranking-empty">まだオンラインの記録がありません。<br>名前を登録して最初のランクインを目指そう！</div>`;
+let monthData=null,monthError=false,monthLabel='';
+function onlineListHtml(data,error,head,meId){
+  if(error)return head+`<div class="ranking-empty">オンラインに接続できませんでした。<br>「この端末」タブで端末内の記録が見られます。</div>`;
+  if(!data)return head+`<div class="ranking-empty">読み込み中…</div>`;
+  const list=data.top||[];
+  if(!list.length)return head+`<div class="ranking-empty">まだ記録がありません。<br>名前を登録して最初のランクインを目指そう！</div>`;
   const medals=['1','2','3'];
-  const rows=list.map((e,i)=>`<div class="rank-row ${e.id===onlineMeId?'me':''}"><div class="rank-no">${medals[i]||i+1}</div><div class="rank-name">${escapeHtml(e.name||'名無しプレイヤー')}</div><div class="rank-el">No.${e.z||1} ${escapeHtml(ELEMENTS[Math.max(0,(e.z||1)-1)].symbol)}</div><div class="rank-score">${e.score}</div></div>`).join('');
+  const rows=list.map((e,i)=>`<div class="rank-row ${e.id===meId?'me':''}"><div class="rank-no">${medals[i]||i+1}</div><div class="rank-name">${escapeHtml(e.name||'名無しプレイヤー')}</div><div class="rank-el">No.${e.z||1} ${escapeHtml(ELEMENTS[Math.max(0,(e.z||1)-1)].symbol)}</div><div class="rank-score">${e.score}</div></div>`).join('');
   let foot='';
-  if(onlineData.myBest&&onlineData.myRank>10)foot=`<div class="ranking-sub" style="margin:8px 0 6px">あなたのベストは ${onlineData.myRank} 位（${onlineData.myBest.score} pt）</div>`;
+  if(data.myBest&&data.myRank>10)foot=`<div class="ranking-sub" style="margin:8px 0 6px">あなたのベストは ${data.myRank} 位（${data.myBest.score} pt）</div>`;
   return head+`<div>${rows}</div>`+foot;
 }
-function rankingCardHtml(){
-  const tabs=`<div class="rank-tabs"><button type="button" class="rank-tab ${rankTab==='online'?'active':''}" data-rank-tab="online">オンライン</button><button type="button" class="rank-tab ${rankTab==='local'?'active':''}" data-rank-tab="local">この端末</button></div>`;
-  return tabs+(rankTab==='online'?renderOnlineRanking():renderRanking(lastLocalEntryId));
+function renderOnlineRanking(){
+  const head=`<div class="ranking-title">🏆 <span class="gold">オンラインランキング TOP 10</span></div><div class="ranking-sub">みんなの記録</div>`;
+  return onlineListHtml(onlineData,onlineError,head,onlineMeId);
 }
-function refreshRankingArea(){const area=document.getElementById('ranking-area');if(area)area.innerHTML=rankingCardHtml()}
+function renderMonthRanking(){
+  const head=`<div class="ranking-title">🏆 <span class="gold">今月のランキング TOP 10</span></div><div class="ranking-sub">${monthLabel?monthLabel+'の記録':'今月の記録'}（毎月1日にリセット）</div>`;
+  return onlineListHtml(monthData,monthError,head,monthData&&monthData.myBest?monthData.myBest.id:null);
+}
+function rankingCardHtml(){
+  const tabs=`<div class="rank-tabs"><button type="button" class="rank-tab ${rankTab==='online'?'active':''}" data-rank-tab="online">オンライン</button><button type="button" class="rank-tab ${rankTab==='month'?'active':''}" data-rank-tab="month">今月</button><button type="button" class="rank-tab ${rankTab==='local'?'active':''}" data-rank-tab="local">この端末</button></div>`;
+  return tabs+(rankTab==='online'?renderOnlineRanking():rankTab==='month'?renderMonthRanking():renderRanking(lastLocalEntryId));
+}
+function refreshRankingArea(){document.querySelectorAll('#ranking-area,#ranking-area-start').forEach(a=>{a.innerHTML=rankingCardHtml()})}
 async function loadOnlineRanking(){
   try{const res=await fetch(`${RANK_API}/ranking?uuid=${encodeURIComponent(deviceId())}`);if(!res.ok)throw new Error('bad status');onlineData=await res.json();onlineError=false}
   catch(e){onlineError=true}
   if(rankTab==='online')refreshRankingArea();
 }
+async function loadMonthRanking(){
+  try{const res=await fetch(`${RANK_API}/ranking?period=month&uuid=${encodeURIComponent(deviceId())}`);if(!res.ok)throw new Error('bad status');const data=await res.json();if(!data||data.period!=='month')throw new Error('not monthly');monthData=data;monthError=false;if(data.month){const parts=data.month.split('-');monthLabel=`${parts[0]}年${Number(parts[1])}月`}}
+  catch(e){monthError=true}
+  if(rankTab==='month')refreshRankingArea();
+}
+function onRankTabClick(e){const b=e.target.closest('[data-rank-tab]');if(!b)return;rankTab=b.dataset.rankTab;refreshRankingArea();if(rankTab==='online'&&!onlineData&&!onlineError)loadOnlineRanking();if(rankTab==='month'&&!monthData&&!monthError)loadMonthRanking()}
 async function submitOnlineScore(name,entry){
   const msg=document.getElementById('rank-save-msg');
   try{
     const res=await fetch(`${RANK_API}/scores`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uuid:deviceId(),name,score:entry.score,z:entry.z,time:entry.time})});
     const data=await res.json().catch(()=>null);
-    if(res.ok&&data&&data.ok){onlineMeId=data.id;onlineData=null;await loadOnlineRanking();if(msg)msg.textContent+=` オンラインでは ${data.rank} 位です！`}
+    if(res.ok&&data&&data.ok){onlineMeId=data.id;onlineData=null;monthData=null;await loadOnlineRanking();if(msg)msg.textContent+=` オンラインでは ${data.rank} 位です！`}
     else if(msg)msg.textContent+=(data&&data.error==='name not allowed')?'（その名前はオンラインでは使えません）':'（オンライン登録はできませんでした）';
   }catch(e){if(msg)msg.textContent+='（オンライン登録はできませんでした）'}
 }
@@ -445,7 +473,7 @@ overlay.innerHTML=`
 </div>`;
 document.getElementById('share-btn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(tweetText)}catch(e){}window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`,'_blank')});
 document.getElementById('retry-btn-dynamic').addEventListener('click',()=>location.reload());
-document.getElementById('ranking-area').addEventListener('click',e=>{const b=e.target.closest('[data-rank-tab]');if(!b)return;rankTab=b.dataset.rankTab;refreshRankingArea();if(rankTab==='online'&&!onlineData&&!onlineError)loadOnlineRanking()});
+document.getElementById('ranking-area').addEventListener('click',onRankTabClick);
 loadOnlineRanking();
 let rankSaved=false;
 const saveRank=()=>{
