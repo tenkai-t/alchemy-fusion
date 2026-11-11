@@ -2,6 +2,7 @@
 // Routes:
 //   GET  /            -> "ok"
 //   GET  /ranking?uuid=<device uuid>  -> { top: [...10], myRank, myBest }
+//   GET  /ranking?uuid=...&period=month -> 今月（JST）の { top, myRank, myBest, period:'month', month:'YYYY-MM' }
 //   POST /scores      -> { uuid, name, score, z, time } を登録し { ok, id, rank } を返す
 const ALLOW_ORIGIN = 'https://tenkai-t.github.io';
 
@@ -35,11 +36,24 @@ function isNgName(name){const n=normalizeName(name);return NG_WORDS.some(w=>n.in
 function intIn(v, min, max) {
   return Number.isInteger(v) && v >= min && v <= max;
 }
-async function rankOf(db, row) {
-  const r = await db.prepare(
-    'SELECT COUNT(*) AS c FROM scores WHERE score > ? OR (score = ? AND created_at < ?) OR (score = ? AND created_at = ? AND id < ?)'
-  ).bind(row.score, row.score, row.created_at, row.score, row.created_at, row.id).first();
+async function rankOf(db, row, range) {
+  const w = range ? ' AND created_at >= ? AND created_at < ?' : '';
+  const stmt = db.prepare(
+    'SELECT COUNT(*) AS c FROM scores WHERE (score > ? OR (score = ? AND created_at < ?) OR (score = ? AND created_at = ? AND id < ?))' + w
+  );
+  const bound = range
+    ? stmt.bind(row.score, row.score, row.created_at, row.score, row.created_at, row.id, range.start, range.end)
+    : stmt.bind(row.score, row.score, row.created_at, row.score, row.created_at, row.id);
+  const r = await bound.first();
   return (r ? r.c : 0) + 1;
+}
+// 日本時間（JST）での今月の範囲を UTC の ISO 文字列で返す
+function monthRangeJST(now = new Date()) {
+  const jst = new Date(now.getTime() + 9 * 3600 * 1000);
+  const y = jst.getUTCFullYear(), m = jst.getUTCMonth();
+  const start = new Date(Date.UTC(y, m, 1) - 9 * 3600 * 1000);
+  const end = new Date(Date.UTC(y, m + 1, 1) - 9 * 3600 * 1000);
+  return { start: start.toISOString(), end: end.toISOString(), label: y + '-' + String(m + 1).padStart(2, '0') };
 }
 
 export default {
@@ -51,23 +65,34 @@ export default {
         return new Response('ok', { headers: { 'Content-Type': 'text/plain; charset=utf-8', ...corsHeaders() } });
       }
       if (url.pathname === '/ranking' && request.method === 'GET') {
-        const top = await env.DB.prepare(
-          'SELECT id, name, score, z, time_sec, created_at FROM scores ORDER BY score DESC, created_at ASC, id ASC LIMIT 10'
-        ).all();
+        const range = url.searchParams.get('period') === 'month' ? monthRangeJST() : null;
+        const top = range
+          ? await env.DB.prepare(
+              'SELECT id, name, score, z, time_sec, created_at FROM scores WHERE created_at >= ? AND created_at < ? ORDER BY score DESC, created_at ASC, id ASC LIMIT 10'
+            ).bind(range.start, range.end).all()
+          : await env.DB.prepare(
+              'SELECT id, name, score, z, time_sec, created_at FROM scores ORDER BY score DESC, created_at ASC, id ASC LIMIT 10'
+            ).all();
         let myRank = null, myBest = null;
         const uuid = url.searchParams.get('uuid');
         if (validUuid(uuid)) {
-          const best = await env.DB.prepare(
-            'SELECT id, name, score, z, time_sec, created_at FROM scores WHERE uuid = ? ORDER BY score DESC, created_at ASC, id ASC LIMIT 1'
-          ).bind(uuid).first();
+          const best = range
+            ? await env.DB.prepare(
+                'SELECT id, name, score, z, time_sec, created_at FROM scores WHERE uuid = ? AND created_at >= ? AND created_at < ? ORDER BY score DESC, created_at ASC, id ASC LIMIT 1'
+              ).bind(uuid, range.start, range.end).first()
+            : await env.DB.prepare(
+                'SELECT id, name, score, z, time_sec, created_at FROM scores WHERE uuid = ? ORDER BY score DESC, created_at ASC, id ASC LIMIT 1'
+              ).bind(uuid).first();
           if (best) {
             myBest = { id: best.id, name: best.name, score: best.score, z: best.z, time: best.time_sec, date: best.created_at };
-            myRank = await rankOf(env.DB, best);
+            myRank = await rankOf(env.DB, best, range);
           }
         }
         return json({
           top: (top.results || []).map(e => ({ id: e.id, name: e.name, score: e.score, z: e.z, time: e.time_sec, date: e.created_at })),
           myRank, myBest,
+          period: range ? 'month' : 'all',
+          ...(range ? { month: range.label } : {}),
         });
       }
       if (url.pathname === '/scores' && request.method === 'POST') {
