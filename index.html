@@ -32,8 +32,8 @@
   --text:#e6f7ff; --muted:#9aa7c7;
 }
 *{box-sizing:border-box;user-select:none;-webkit-user-select:none;margin:0;padding:0}
-body{background:#010104;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;overflow:hidden;touch-action:none;display:flex;justify-content:center;align-items:center;height:100vh}
-#game-container{position:relative;width:100vw;height:100vh;max-width:480px;max-height:854px;overflow:hidden;background:radial-gradient(1100px 700px at 50% -10%,#312e81 0%,transparent 60%),radial-gradient(800px 600px at 90% 110%,rgba(236,72,153,.20),transparent 55%),radial-gradient(circle at center,#17123d 0%,#030308 78%);box-shadow:0 0 60px rgba(139,92,246,.35)}
+body{background:#010104;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;overflow:hidden;touch-action:none;display:flex;justify-content:center;align-items:center;height:100vh;height:100dvh}
+#game-container{position:relative;width:100vw;height:100vh;height:100dvh;max-width:480px;max-height:854px;overflow:hidden;background:radial-gradient(1100px 700px at 50% -10%,#312e81 0%,transparent 60%),radial-gradient(800px 600px at 90% 110%,rgba(236,72,153,.20),transparent 55%),radial-gradient(circle at center,#17123d 0%,#030308 78%);box-shadow:0 0 60px rgba(139,92,246,.35)}
 #game-container::before{content:'';position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent,rgba(139,92,246,.07),transparent,rgba(52,211,153,.06),transparent);animation:aurora 24s linear infinite;pointer-events:none}
 #game-container.light::before{animation:none}
 .light-toggle{margin-top:10px}
@@ -132,8 +132,8 @@ p.subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:cente
 .rank-row:nth-child(1) .rank-no{background:linear-gradient(135deg,#fde68a,#f59e0b);color:#451a03;box-shadow:0 0 14px rgba(245,158,11,.6)}
 .rank-row:nth-child(2) .rank-no{background:linear-gradient(135deg,#f1f5f9,#94a3b8);color:#1e293b}
 .rank-row:nth-child(3) .rank-no{background:linear-gradient(135deg,#fdba74,#c2703d);color:#431407}
-#ranking-overlay,#overlay{justify-content:flex-start;height:100%;height:100dvh}
-#ranking-overlay .panel{max-width:400px;margin:auto 0;padding:24px 14px 18px;max-height:calc(100dvh - 36px);overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#ranking-overlay,#overlay{justify-content:flex-start}
+#ranking-overlay .panel{max-width:400px;margin:auto 0;padding:24px 14px 18px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));max-height:100%;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 #overlay .panel,#overlay .result-wrapper{margin-top:auto;margin-bottom:auto}
 .rank-name{flex:1;min-width:0;font-size:16.5px;font-weight:900;color:#fff;overflow-wrap:anywhere;line-height:1.3;text-align:left}
 .rank-el{font-size:12.5px;font-weight:800;color:#aeb9d6;white-space:nowrap}
