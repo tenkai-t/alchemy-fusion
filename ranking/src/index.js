@@ -30,7 +30,7 @@ function cleanName(v) {
   if (len < 1 || len > 12) return null;
   return name;
 }
-const NG_WORDS=['しね','死ね','ころす','殺す','くそ','ばか','あほ','きちがい','ちんこ','ちんちん','まんこ','おっぱい','せっくす','うんこ','うんち','じさつ','自殺','fuck','shit','dick','pussy','bitch','porn','sex'];
+const NG_WORDS=['しね','死ね','ころす','殺す','くそ','ばか','あほ','きちがい','ちんこ','ちんちん','ちんぽ','まんこ','おっぱい','せっくす','うんこ','うんち','じさつ','自殺','4545','0721','1919','114514','しこしこ','おなにー','おなに','ぺにす','きんたま','くりとりす','ふぇら','くんに','ぱいずり','てまん','あなる','えろ','えっち','すけべ','へんたい','変態','いんらん','淫乱','ちかん','痴漢','ちじょ','痴女','ろり','ろりこん','しょた','ぺど','れいぷ','ごうかん','強姦','りんかん','輪姦','わいせつ','猥褻','性行為','発情','はつじょう','自慰','ばいしゅん','売春','えんこう','ぱぱかつ','パパ活','ふうぞく','風俗','そーぷ','でりへる','ぴんさろ','あだると','fuck','shit','dick','pussy','bitch','porn','sex','penis','vagina','anal','boobs','tits','hentai','cum','cock','sperm'];
 function normalizeName(s){return String(s).replace(/[！-～]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).toLowerCase().replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[\s　・_.\-~〜]/g,'')}
 function isNgName(name){const n=normalizeName(name);return NG_WORDS.some(w=>n.includes(normalizeName(w)))}
 function intIn(v, min, max) {
